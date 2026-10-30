@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lector de voz</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--card:#fff;--ink:#1b2a41;--mute:#5b6b82;--line:#d3dae4;--acc:#0f766e;--accink:#fff;--hl:#ffd84d;--hlink:#1b2a41;--lineact:#e3f1ef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a28;--card:#1a2436;--ink:#e6ecf5;--mute:#93a3bb;--line:#2d3a52;--acc:#2dd4bf;--accink:#0b1a18;--hl:#ffd84d;--hlink:#1b2a41;--lineact:#1d3036}}
+:root[data-theme="dark"]{--bg:#121a28;--card:#1a2436;--ink:#e6ecf5;--mute:#93a3bb;--line:#2d3a52;--acc:#2dd4bf;--accink:#0b1a18;--hl:#ffd84d;--hlink:#1b2a41;--lineact:#1d3036}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:860px){main{grid-template-columns:3fr 2fr;align-items:start}header{grid-column:1/-1}}
+h1{font-size:1.6rem;margin:0}header p{margin:4px 0 0;color:var(--mute)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font-size:1.05rem;margin:0 0 8px}
+.hint{color:var(--mute);font-size:.88rem;margin:0 0 8px}
+textarea,select,input[type=text],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea{min-height:260px;resize:vertical;font-family:"Source Serif 4",Georgia,serif;font-size:1.05rem}
+#dict{min-height:90px}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px}
+button.main{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:700}
+button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+label{display:block;margin:10px 0 2px;font-weight:700;font-size:.95rem}
+label output{font-weight:400;color:var(--mute);margin-left:6px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.rule{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}.rule .mini{margin:0;font-weight:400;font-size:.85rem;color:var(--mute)}
+#reader{font-family:"Source Serif 4",Georgia,serif;font-size:1.2rem;line-height:1.75;min-height:260px}
+.line{padding:6px 10px;border-radius:8px;margin-bottom:4px;cursor:pointer}
+.line.active{background:var(--lineact)}
+.who{font:700 .85rem "Atkinson Hyperlegible",sans-serif;color:var(--acc);margin-right:8px}
+.w.on{background:var(--hl);color:var(--hlink);border-radius:3px;padding:0 2px}
+#msg{color:var(--mute);font-size:.88rem;margin-top:8px}
+#fl{position:fixed;left:max(10px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);z-index:20;width:56px;height:56px;border-radius:28px;background:var(--acc);color:var(--accink);border:0;font-size:1.5rem;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+#fl.p{width:auto;padding:0 20px;font-size:1.05rem;font-weight:700}
+.lang{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--acc);border-radius:8px;background:var(--lineact)}
+.lang[hidden]{display:none}
+.lang select{width:auto}
+.lang span{flex:1 1 200px}
+#fl{left:0;transform:translate(-50%,-50%);transition:transform .15s}#fl:hover,#fl:focus-visible{transform:translate(0,-50%)}#fl.free{left:max(10px,env(safe-area-inset-left,0px));transform:translateY(-50%)}
+.tw{position:relative}
+#text{padding-right:54px}
+#clear{position:absolute;top:8px;right:8px;width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;z-index:2;background:var(--card)}
+#clear svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#ask{position:absolute;top:8px;right:8px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border:1px solid var(--acc);border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+#clear[hidden],#ask[hidden]{display:none}
+.ai-box{border:2px solid var(--acc);background:var(--card)}
+#aiText{min-height:140px;font-size:.95rem}
+#aiStatus{font-size:.88rem;margin-top:8px;line-height:1.4}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Lector de voz</h1>
+<p>Escucha tus capítulos en voz alta con asignación automática de personajes.</p>
+</header>
+
+<div>
+<section>
+<div id="editBox">
+<div class="lang" id="lang" hidden><span id="langMsg"></span><select id="langWho" aria-label="Quién lee las líneas sin nombre"><option value="WildGrills:">Líneas sin nombre: WildGrills</option><option value="Narrador:">Líneas sin nombre: Narrador</option></select><button class="main" id="langBtn"></button></div>
+<h2>Texto del lector</h2>
+<p class="hint">Aquí aparece el texto traducido y con las voces listas para leer.</p>
+<div class="tw">
+<textarea id="text" placeholder="Pega aquí tu texto o tradúcelo desde la caja de IA a la derecha"></textarea>
+<button id="clear" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 10v6M14 10v6"/></svg></button>
+<div id="ask" hidden><span>¿Borrar todo el texto?</span><button type="button" class="main" id="askYes">Sí, borrar</button><button type="button" id="askNo">Cancelar</button></div>
+</div>
+</div>
+<div id="readBox" hidden>
+<h2>Leyendo</h2>
+<p class="hint">Toca cualquier línea para empezar desde ahí.</p>
+<div id="reader"></div>
+</div>
+<div class="bar">
+<button class="main" id="play">Leer</button>
+<button id="pause" hidden>Pausa</button>
+<button id="stop">Detener</button>
+<button id="edit" hidden>Editar texto</button>
+</div>
+<div id="msg"></div>
+</section>
+</div>
+
+<div style="display:grid;gap:16px">
+
+<!-- CAJA DE TRADUCCIÓN CON IA (CONECTADA A TU CLOUDFLARE) -->
+<section class="ai-box">
+<h2>Traducir con IA</h2>
+<p class="hint">Traduce directo a los personajes usando tu propio puente gratuito.</p>
+
+<div style="margin-bottom:8px">
+<label for="workerUrl" style="margin-top:0">Tu puente Cloudflare:</label>
+<input type="text" id="workerUrl" value="https://delicate-math-bfe2.guillermop2019.workers.dev" autocomplete="off">
+</div>
+
+<div style="margin-bottom:8px">
+<label for="apiKey" style="margin-top:0">Clave de Gemini API:</label>
+<input type="password" id="apiKey" placeholder="Pega tu clave Gemini aquí" autocomplete="off">
+</div>
+
+<label for="aiText">Texto en inglés:</label>
+<textarea id="aiText" placeholder="Pega aquí el texto original en inglés..."></textarea>
+
+<div class="bar">
+<button class="main" id="aiBtn">Traducir y cargar al lector</button>
+</div>
+<div id="aiStatus"></div>
+</section>
+
+<section>
+<h2>Voz y velocidad</h2>
+<label for="defVoice">Voz general</label>
+<select id="defVoice"></select>
+<label for="rate">Velocidad <output id="rateO"></output></label>
+<input type="range" id="rate" min="0.5" max="2" step="0.05" value="1">
+<label for="vol">Volumen <output id="volO"></output></label>
+<input type="range" id="vol" min="0" max="1" step="0.05" value="1">
+<label for="pitch">Tono <output id="pitchO"></output></label>
+<input type="range" id="pitch" min="0.5" max="2" step="0.05" value="1">
+</section>
+
+<section>
+<h2>Personajes</h2>
+<p class="hint">Si una línea empieza con el texto de la izquierda, se lee con esa voz.</p>
+<div id="rules"></div>
+<button id="addRule">Añadir personaje</button>
+</section>
+
+<section>
+<h2>Vocabulario</h2>
+<p class="hint">Una palabra por línea, con este formato: lmao = lamao. Se lee la de la derecha y el texto no cambia.</p>
+<textarea id="dict" placeholder="lmao = lamao&#10;lol = lol"></textarea>
+</section>
+</div>
+</main>
+<button id="fl" hidden aria-label="Pausar lectura">⏸</button>
+
+<script>
+(function(){
+var $=function(id){return document.getElementById(id)};
+var synth=window.speechSynthesis, voices=[], rules=[], lines=[], idx=0, token=0, KEY="lector-voz-v2";
+
+function hs(s){var h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return s.length+":"+h}
+var BASE=hs($("text").value);
+function save(){try{localStorage.setItem(KEY,JSON.stringify({b:BASE,t:$("text").value,d:$("dict").value,r:$("rate").value,v:$("vol").value,p:$("pitch").value,dv:$("defVoice").value,rules:rules}))}catch(e){}}
+function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||"null");return s}catch(e){return null}}
+var saved=load();
+if(saved){if(saved.b===BASE)$("text").value=saved.t||"";$("dict").value=saved.d||"";$("rate").value=saved.r||1;$("vol").value=saved.v||1;$("pitch").value=saved.p||1;rules=saved.rules||[]}
+if(!rules.length)rules=[
+{p:"WildGrills:",vn:"Microsoft Pablo",t:1,s:1},
+{p:"LongLiveTheSun:",vn:"Google español",t:0.9,s:1},
+{p:"AllFather:",vn:"Google español",t:0.7,s:0.9},
+{p:"PassingDwarf:",vn:"Google español",t:1.2,s:1.1},
+{p:"HeavenlyDemon:",vn:"Microsoft Helena",t:1,s:1},
+{p:"ChaengguPrincess:",vn:"Microsoft Laura",t:1.25,s:1.1},
+{p:"StarlightPrincess:",vn:"Microsoft Laura",t:1,s:1},
+{p:"SwordMaster:",vn:"Microsoft Laura",t:0.8,s:1},
+{p:"Narrador:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
+{p:"Anónimo:",vn:"Google español de Estados Unidos",t:1.3,s:1.15}];
+
+function labels(){$("rateO").textContent=$("rate").value+"x";$("volO").textContent=Math.round($("vol").value*100)+"%";$("pitchO").textContent=$("pitch").value}
+
+function voiceOptions(sel,val){
+  sel.innerHTML="";
+  var o=document.createElement("option");o.value="";o.textContent="Voz general";sel.appendChild(o);
+  voices.forEach(function(v){var x=document.createElement("option");x.value=v.voiceURI;x.textContent=v.name+" ("+v.lang+")";sel.appendChild(x)});
+  sel.value=val||"";
+}
+function fillVoices(){
+  voices=synth.getVoices().slice().sort(function(a,b){return a.lang.localeCompare(b.lang)||a.name.localeCompare(b.name)});
+  var d=$("defVoice");d.innerHTML="";
+  voices.forEach(function(v){var x=document.createElement("option");x.value=v.voiceURI;x.textContent=v.name+" ("+v.lang+")";d.appendChild(x)});
+  var want=(saved&&saved.dv)||"";
+  if(want&&voices.some(function(v){return v.voiceURI===want}))d.value=want;
+  else{var es=voices.find(function(v){return /^es/i.test(v.lang)});if(es)d.value=es.voiceURI}
+  rules.forEach(function(r){if(!r.v&&r.vn){var f=voices.find(function(v){return v.name===r.vn||(r.vn.indexOf("Microsoft")===0&&v.name.indexOf(r.vn)===0)});if(f)r.v=f.voiceURI}});
+  renderRules();
+}
+function renderRules(){
+  var box=$("rules");box.innerHTML="";
+  rules.forEach(function(r,i){
+    var row=document.createElement("div");row.className="rule";
+    var p=document.createElement("input");p.type="text";p.value=r.p;p.setAttribute("aria-label","Inicio de línea del personaje");
+    p.oninput=function(){r.p=p.value;save()};
+    var s=document.createElement("select");s.setAttribute("aria-label","Voz del personaje");voiceOptions(s,r.v);
+    s.onchange=function(){r.v=s.value;save()};
+    var b=document.createElement("button");b.textContent="Quitar";
+    b.onclick=function(){rules.splice(i,1);renderRules();save()};
+    function sl(txt,key){var w=document.createElement("div"),l=document.createElement("label"),x=document.createElement("input");l.className="mini";l.textContent=txt+" "+(r[key]||1);x.type="range";x.min=0.5;x.max=2;x.step=0.05;x.value=r[key]||1;x.setAttribute("aria-label",txt+" del personaje");x.oninput=function(){r[key]=+x.value;l.textContent=txt+" "+r[key];save()};w.appendChild(l);w.appendChild(x);return w}
+    var tb=document.createElement("button");tb.textContent="Probar voz";
+    tb.onclick=function(){token++;synth.cancel();var u=new SpeechSynthesisUtterance("Hola, así suena este personaje.");var v=voiceFor(r.v)||voiceFor($("defVoice").value);if(v){u.voice=v;u.lang=v.lang}u.rate=+$("rate").value*(r.s||1);u.volume=+$("vol").value;u.pitch=Math.min(2,+$("pitch").value*(r.t||1));synth.speak(u)};
+    row.appendChild(p);row.appendChild(s);row.appendChild(sl("Tono","t"));row.appendChild(sl("Velocidad","s"));row.appendChild(tb);row.appendChild(b);box.appendChild(row);
+  });
+}
+function voiceFor(uri){return voices.find(function(v){return v.voiceURI===uri})}
+
+function dictMap(){
+  var m=Object.create(null);
+  $("dict").value.split("\n").forEach(function(l){
+    var k=l.indexOf("=");if(k<1)return;
+    var a=l.slice(0,k).trim().toLowerCase(),b=l.slice(k+1).trim();
+    if(a&&b)m[a]=b;
+  });
+  return m;
+}
+
+function parse(){
+  var dm=dictMap();lines=[];
+  $("text").value.split("\n").forEach(function(raw){
+    if(!raw.trim())return;
+    var trimmed=raw.trim(),rule=null,prefix="";
+    for(var i=0;i<rules.length;i++){
+      var p=(rules[i].p||"").trim();
+      if(p&&trimmed.toLowerCase().indexOf(p.toLowerCase())===0){rule=rules[i];prefix=trimmed.slice(0,p.length);break}
+    }
+    var body=rule?trimmed.slice(prefix.length).trim():trimmed;
+    var words=[],spoken="",re=/\S+/g,m;
+    while((m=re.exec(body))){
+      var w=m[0],parts=w.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u),rep=w;
+      if(dm[w.toLowerCase()])rep=dm[w.toLowerCase()];else if(parts&&dm[parts[2].toLowerCase()])rep=parts[1]+dm[parts[2].toLowerCase()]+parts[3];
+      words.push({t:w,s:spoken.length});
+      spoken+=rep+" ";
+    }
+    lines.push({prefix:prefix,body:body,words:words,spoken:spoken,voice:rule&&rule.v?rule.v:"",t:rule&&rule.t||1,s:rule&&rule.s||1});
+  });
+}
+
+function render(){
+  var r=$("reader");r.innerHTML="";
+  lines.forEach(function(L,i){
+    var d=document.createElement("div");d.className="line";d.id="L"+i;
+    if(L.prefix){var s=document.createElement("span");s.className="who";s.textContent=L.prefix;d.appendChild(s)}
+    L.words.forEach(function(w,j){var s=document.createElement("span");s.className="w";s.id="W"+i+"_"+j;s.textContent=w.t+" ";d.appendChild(s)});
+    d.onclick=function(){start(i)};
+    r.appendChild(d);
+  });
+}
+function clearHl(){
+  document.querySelectorAll(".w.on").forEach(function(e){e.classList.remove("on")});
+  document.querySelectorAll(".line.active").forEach(function(e){e.classList.remove("active")});
+}
+function mark(i,ch){
+  var L=lines[i],k=0;
+  for(var j=0;j<L.words.length;j++){if(L.words[j].s<=ch)k=j;else break}
+  document.querySelectorAll(".w.on").forEach(function(e){e.classList.remove("on")});
+  var el=$("W"+i+"_"+k);
+  if(el){el.classList.add("on");el.scrollIntoView({block:"center",behavior:"smooth"})}
+}
+function speak(i){
+  if(i>=lines.length){stop(true);$("msg").textContent="Terminó la lectura.";return}
+  idx=i;var t=++token,L=lines[i];
+  clearHl();var le=$("L"+i);if(le){le.classList.add("active");le.scrollIntoView({block:"center",behavior:"smooth"})}
+  var u=new SpeechSynthesisUtterance(L.spoken);
+  var v=voiceFor(L.voice)||voiceFor($("defVoice").value);
+  if(v){u.voice=v;u.lang=v.lang}
+  u.rate=+$("rate").value*(L.s||1);u.volume=+$("vol").value;u.pitch=Math.min(2,+$("pitch").value*(L.t||1));
+  u.onboundary=function(e){if(t===token&&(!e.name||e.name==="word"))mark(i,e.charIndex)};
+  u.onend=function(){if(t===token)speak(i+1)};
+  u.onerror=function(){if(t===token&&!synth.speaking)speak(i+1)};
+  synth.speak(u);
+}
+function start(i){
+  if(!synth){$("msg").textContent="Este navegador no tiene lectura de voz. Prueba con Chrome, Edge o Safari.";return}
+  paused=false;synth.cancel();synth.resume();parse();
+  if(!lines.length){$("msg").textContent="Escribe o pega un texto primero.";return}
+  render();$("editBox").hidden=true;$("readBox").hidden=false;$("edit").hidden=false;$("msg").textContent="";
+  $("pause").textContent="Pausa";save();speak(i||0);fl();
+}
+function stop(keep){
+  token++;synth.cancel();synth.resume();$("pause").textContent="Pausa";$("fl").hidden=true;paused=false;
+  if(!keep)clearHl();
+}
+
+$("play").onclick=function(){start(0)};
+var paused=false;
+function tp(){
+  if(paused){paused=false;synth.resume();$("pause").textContent="Pausa";fl()}
+  else if(synth.speaking){paused=true;synth.pause();$("pause").textContent="Continuar";fl()}
+}
+function fr(){var s=document.querySelector("section");return s?s.getBoundingClientRect().left:0}
+function fl(){
+  var b=$("fl"),ps=paused;
+  var L=fr(),ok=L>=76;b.hidden=false;b.className=ok?"free":"";b.style.left=ok?(L-64)+"px":"";
+  b.textContent=ps?"▶":"⏸";
+  b.setAttribute("aria-label",ps?"Continuar lectura":"Pausar lectura");
+}
+$("pause").onclick=tp;$("fl").onclick=tp;
+window.addEventListener("resize",function(){if(!$("fl").hidden)fl()});
+document.addEventListener("click",function(e){
+  if($("readBox").hidden||paused||!synth.speaking)return;
+  if(e.target.closest("section,button,select,input,textarea,a"))return;
+  tp();
+});
+$("stop").onclick=function(){stop()};
+$("edit").onclick=function(){stop();$("readBox").hidden=true;$("editBox").hidden=false;$("edit").hidden=true;$("msg").textContent=""};
+$("addRule").onclick=function(){rules.push({p:"C:",v:""});renderRules();save()};
+["rate","vol","pitch"].forEach(function(id){$(id).oninput=function(){labels();save()}});
+["text","dict"].forEach(function(id){$(id).oninput=save});
+$("defVoice").onchange=save;
+
+var EN=new Set("the and to of was that with you it in for but not this his have are what they my so".split(" "));
+var ES=new Set("el la de que y en un una los las se por con es su para lo como más pero al del mi yo tu ya fue muy sin sobre también está estaba había".split(" "));
+function detect(t){var w=t.slice(0,4000).toLowerCase().match(/[a-záéíóúñü]+/g)||[],e=0,s=0;w.forEach(function(x){if(EN.has(x))e++;if(ES.has(x))s++});return e>=6&&e>s*1.5?"en":s>=6&&s>e*1.5?"es":""}
+function marked(l){var t=l.trim().toLowerCase();return rules.some(function(r){var p=(r.p||"").trim().to
