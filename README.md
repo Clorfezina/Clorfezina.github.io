@@ -1,2 +1,2 @@
 # Clorfezina.github.io
-Novels
+Novel Reader
