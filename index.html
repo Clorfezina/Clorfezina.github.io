@@ -19,7 +19,7 @@ h1{font-size:1.6rem;margin:0}header p{margin:4px 0 0;color:var(--mute)}
 section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
 h2{font-size:1.05rem;margin:0 0 8px}
 .hint{color:var(--mute);font-size:.88rem;margin:0 0 8px}
-textarea,select,input[type=text],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea,select,input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
 textarea{min-height:260px;resize:vertical;font-family:"Source Serif 4",Georgia,serif;font-size:1.05rem}
 #dict{min-height:90px}
 button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px}
@@ -49,235 +49,231 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 #clear svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #ask{position:absolute;top:8px;right:8px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border:1px solid var(--acc);border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 #clear[hidden],#ask[hidden]{display:none}
-.ai-box{border:2px solid var(--acc);background:var(--card)}
-#aiText{min-height:140px;font-size:.95rem}
-#aiStatus{font-size:.88rem;margin-top:8px;line-height:1.4}
-.rules-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 </style>
 </head>
 <body>
 <main>
 <header>
 <h1>Lector de voz</h1>
-<p>Escucha tus capítulos en voz alta con asignación automática de personajes.</p>
+<p>Pega un texto y escúchalo con voces distintas por personaje.</p>
 </header>
 
 <div>
 <section>
 <div id="editBox">
 <div class="lang" id="lang" hidden><span id="langMsg"></span><select id="langWho" aria-label="Quién lee las líneas sin nombre"><option value="WildGrills:">Líneas sin nombre: WildGrills</option><option value="Narrador:">Líneas sin nombre: Narrador</option></select><button class="main" id="langBtn"></button></div>
-<h2>Texto del lector</h2>
-<p class="hint">Escribe cada personaje en una línea nueva o tradúcelo desde la caja de la derecha.</p>
+<h2>Texto</h2>
+<p class="hint">Escribe cada personaje en una línea nueva, por ejemplo: «WildGrills: Hola».</p>
 <div class="tw">
 <textarea id="text" placeholder="Pega aquí tu texto">WildGrills: Me quedé mirando el brillante pez rojo que bloqueaba el canal de agua.
 WildGrills: El canal estaba revestido de piedras para controlar el caudal.
-WildGrills: Dado que el canal es un camino improvisado cavado con una pala, la profundidad no es mucha.
+WildGrills: Dado que el canal es un camino improvisado cavado con una pala, la profundidad no es grande.
 WildGrills: Parece que este infeliz se metió nadando y quedó atrapado.
-WildGrills: La corriente en sí es bastante fuerte, y con su cuerpo encajando exactamente en el canal, le sería difícil escapar.
+WildGrills: La corriente en sí es bastante fuerte, y con su cuerpo encajando exactamente en el canal, sería difícil escapar.
 WildGrills: «¿Por qué es tan grande?».
 WildGrills: Es lo suficientemente grande como para llenar por completo el canal.
-WildGrills: A primera vista, lo confundí con un siluro en vez de un pez normal.
-WildGrills: Pero, a excepción de su cuerpo rojizo, parece un pez corriente.
-WildGrills: Los peces típicos suelen ser estrechos de anchura, pero este es más ancho.
-WildGrills: Necesitaría ambas manos para sostenerlo como es debido.
+WildGrills: A primera vista, lo confundí con un siluro en lugar de un pez normal.
+WildGrills: Pero, a excepción del cuerpo rojizo, parece un pez corriente.
+WildGrills: Los peces típicos suelen ser estrechos de anchura, pero este es más grande.
+WildGrills: Necesitaría ambas manos para sostenerlo correctamente.
 WildGrills: No sé mucho de peces, pero estoy seguro de que no es un siluro.
-WildGrills: «Debería ser seguro para comer, ¿no?».
-WildGrills: Miré al pez, que aleteaba enérgicamente sin parar.
-WildGrills: Se debatía para liberarse, pero el agua era poco profunda.
-WildGrills: Al ver su boca sobresalir del agua boqueando, parecía tener dificultades para respirar.
+WildGrills: «Debería ser seguro de comer, ¿no?».
+WildGrills: Miré al pez que aleteaba enérgicamente, muy ocupado.
+WildGrills: Se zafó para liberarse, pero el agua era poco profunda.
+WildGrills: Al ver su hocico sobresalir del agua y jadear, parece que le cuesta respirar.
 Narrador: ¡Aleteo! ¡Aleteo! ¡Aleteo!
 WildGrills: También es fuerte.
 WildGrills: Abracé con ambos brazos al pez que se debatía salvajemente.
 WildGrills: Era tan grande que se podía comparar con mi torso, así que mantener el equilibrio era difícil.
 WildGrills: Intenté alejarme lo más posible para que no volviera a saltar al río.
-WildGrills: Por ahora, mi plan es llevarlo directamente a la cueva con ambas manos y meterlo en una tina.
+WildGrills: Por ahora, mi plan es llevarlo directamente a la cueva con ambas manos y guardarlo en una tina.
 WildGrills: «Debería correr por si acaso».
 WildGrills: Lo último que necesitaba era que animales salvajes me interceptaran.
 WildGrills: No. Ya comiste.
-WildGrills: Round Fluff mostró curiosidad de inmediato cuando traje el pez.
-WildGrills: Aparté a Round Fluff y metí el pez en la tina.
+WildGrills: Round Fluff mostró curiosidad inmediatamente cuando traje el pez.
+WildGrills: Alejé a Round Fluff y metí el pez en la tina.
 WildGrills: No olvidé echar agua en la tina vacía.
 WildGrills: El pez rojo se volvió algo dócil cuando añadí agua. Viéndolo así, es realmente enorme.
-WildGrills: Llena la tina que Round Fluff y yo solemos usar para lavarnos.
-Narrador: Título: He cazado una presa
+WildGrills: Llena la tina que Round Fluff y yo solemos usar para lavar.
+Narrador: Título: Caza una presa
 Narrador: Autor: WildGrills
 Narrador: (Foto de un pez rojo del tamaño de un escudo)
-WildGrills: Hoy el agua no fluía bien por la manguera, así que subí a revisar y me encontré a este tipo bloqueándola. Era verdaderamente enorme.
-WildGrills: Ya desayuné, así que planeo almorzarme a este compañero.
+WildGrills: Hoy el agua no fluía bien por la manguera, así que subí a comprobarlo y me encontré a este tipo bloqueándola. Era realmente enorme.
+WildGrills: Ya desayuné, así que planeo almorzar con este compañero.
 WildGrills: Siento como si fuera un banquete por primera vez en siglos, haha.
-HeavenlyDemon: Oho. Un ejemplar tremendamente grande, sin duda. A juzgar solo por su tamaño y color, no es menos que una Carpa Solar.
+HeavenlyDemon: Oho. Un ejemplar tremendo, sin duda. A juzgar solo por su tamaño y color, no es menos que una Carpa Solar.
 WildGrills: ¿Qué es eso?
-HeavenlyDemon: Una criatura espiritual imbuida con la energía del sol. Es sumamente rara. Sin embargo, solo es similar; la posibilidad de que sea real es probablemente baja.
+HeavenlyDemon: Una criatura espiritual imbuida de la energía del sol. Es muy rara. Sin embargo, solo es similar; la posibilidad de que sea real es baja.
 WildGrills: ¿Cómo compruebo si es real?
-WildGrills: En ese caso usaría al pez como cebo y saldría corriendo.
-WildGrills: Por fortuna, no pasó nada parecido y pude regresar a salvo.
+WildGrills: En ese punto usaría al pez como cebo y echaría a correr.
+WildGrills: Afortunadamente, no pasó nada parecido y pude regresar a salvo.
 Narrador: ¿Kyu?
 HeavenlyDemon: Primero, uno debe ver si contiene un núcleo interno.
-WildGrills: Si se trata de un núcleo interno, ¿no es como eso? Parecido a las almejas creando perlas.
-WildGrills: No estoy seguro, pero creo que tiene efectos similares a los de un elixir.
-WildGrills: Tampoco es que realmente crea que sea una criatura espiritual.
-WildGrills: E incluso si fuera una criatura espiritual, me da igual. Ya he decidido que este será mi almuerzo de hoy.
-Anónimo: No. Todo se convierte en una criatura espiritual contigo, haha.
+WildGrills: Si es un núcleo interno, ¿no es eso? Similar a las almejas que hacen perlas.
+WildGrills: Estoy seguro, pero creo que tiene efectos similares a los de un elixir.
+WildGrills: No es que realmente crea que es una criatura espiritual.
+WildGrills: Incluso si fuera una criatura espiritual, no importa. He decidido que este será mi almuerzo de hoy.
+Anónimo: No. Todo se convierte en una criatura espiritual contigo, lol.
 Anónimo: ¿De verdad es una Carpa Solar?
 Anónimo: Quién sabe. Grills tiene que comprobarlo.
 Anónimo: ¿No había algo parecido a una Carpa Solar?
-HeavenlyDemon: Si habláis del Hwari de Diez Mil Años, entonces sí. Literalmente, una carpa que ha vivido diez mil años.
-StarlightPrincess: En los viejos tiempos, te habría dicho que lo abrieras de golpe inmediatamente, pero ahora ya no hace falta.
-Anónimo: ¿Esos «viejos tiempos» no fueron literalmente ayer?
+HeavenlyDemon: Si hablas del Hwari de Diez Mil Años, entonces sí. Literalmente, una carpa que ha vivido diez mil años.
+StarlightPrincess: En los viejos tiempos, te habría dicho que lo rasgues inmediatamente, pero ahora no hace falta.
+Anónimo: ¿No fueron esos «viejos tiempos» justo ayer?
 StarlightPrincess: Son los viejos tiempos para mí. Cada día se sentía como un año.
-Anónimo: Puedo entender por qué se siente así.
-Anónimo: ¿Tal vez como renacer?
-Anónimo: Buaaa. He renacido. Denme leche.
-Anónimo: Cabrón loco, haha.
-Anónimo: Hahaha
-Anónimo: Hahaha
+Anónimo: Puedo entender cómo podría sentirse así.
+Anónimo: ¿Quizás como nacer de nuevo?
+Anónimo: Waa. He renacido. Dame leche.
+Anónimo: Cabrón loco, lmao.
+Anónimo: Lmafaooo
+Anónimo: Lmafaooo
 StarlightPrincess: Ustedes siempre son iguales. Unos completos idiotas ^^
 WildGrills: Pero ahora es mi almuerzo.
-WildGrills: Diga lo que diga la galería, esta cosa va a ser mi almuerzo.
-WildGrills: Así que creo que sería mejor empezar reparando la cueva en vez de salir a explorar por la mañana.
-WildGrills: Por si acaso Round Fluff se come el pez.
-WildGrills: Todavía se queda mirando fijamente la tina de hierro, esperando una oportunidad.
+WildGrills: No importa lo que diga la galería, esta cosa va a ser mi almuerzo.
+WildGrills: Así que creo que sería mejor empezar por reparar la cueva en lugar de explorar por la mañana.
+WildGrills: Por si Round Fluff se come el pez.
+WildGrills: Todavía sigue mirando fijamente la tina de hierro, esperando una oportunidad.
 WildGrills: ¡Shh!
-WildGrills: Le advertí a Round Fluff cuando intentó alcanzar el pez.
-WildGrills: Me miró con unos ojos tan redondos que eran prácticamente círculos perfectos.
-WildGrills: Una expresión que parecía preguntar qué mal había hecho. Su carita inocente lo hacía aún más tierno.
+WildGrills: Avisé a Round Fluff cuando intentó alcanzar el pez.
+WildGrills: Me miró con unos ojos tan redondos que eran casi perfectamente circulares.
+WildGrills: Una expresión que preguntaba qué mal había hecho. La cara de inocencia lo hacía más tierno.
 WildGrills: No deberías comerte eso. Te daré miel después de almorzar.
 Narrador: Kyuu.
-WildGrills: Sí. Nuestro Round Fluff es un buen chico.
-WildGrills: Le di unas palmadas en la cabeza a Round Fluff y miré a mi alrededor.
-WildGrills: Para construir una barricada, la primera prioridad es talar árboles.
-WildGrills: Quizá por eso ya sentía el pecho oprimido. ¿Cuándo terminaré todo eso?
-WildGrills: «Dicen que grano a grano se hace granero. Tengo que hacerlo».
-WildGrills: Rezongando para mis adentros, caminé hacia el árbol. ¿Cómo demonios podía ser tan grueso?
-WildGrills: Pero hoy estaba en buena forma. Agarré el hacha con fuerza y la balanceé con ímpetu.
-WildGrills: Tras unos cuantos balanceos, pareció que le pillaba el truco y podía emplear la cadera de forma eficiente.
+WildGrills: Sí. Nuestro Round Fluff se porta bien.
+WildGrills: Le palmeé la cabeza a Round Fluff unas cuantas veces y miré a mi alrededor.
+WildGrills: Para construir una barricada, la primera prioridad es despejar los árboles.
+WildGrills: Tal vez por eso ya sentía el pecho oprimido. ¿Cuándo terminaré todo eso?
+WildGrills: «Dicen que muchos pocos hacen un mucho. Tengo que hacerlo».
+WildGrills: Murmullos para mí mismo, caminé hacia el árbol. ¿Cómo podía ser tan grueso?
+WildGrills: Pero hoy estaba en buena forma. Agarré el hacha con fuerza y blandí con ímpetu.
+WildGrills: Tras unos cuantos balanceos, pareció que le pillaba el truco y podía usar la cintura de manera eficiente.
 WildGrills: ¡Zas!
 WildGrills: ¿Eh?
-WildGrills: En el instante en que el hacha golpeó el árbol, se me escapó un sonido de extrañeza.
-WildGrills: Y con buena razón, pues la situación era drásticamente distinta a la de ayer.
-WildGrills: La misma hacha que apenas hizo mella ayer tras múltiples golpes no estaba sufriendo hoy para nada.
-WildGrills: La hoja se hundió profundamente en la madera. Incluso el sonido fue diferente.
-WildGrills: «¿Qué? ¿Esta madera es más blanda que la de ayer?».
+WildGrills: En el momento en que el hacha golpeó el árbol, se me escapó un sonido de duda.
+WildGrills: Y con buena razón, porque la situación era drásticamente diferente a la de ayer.
+WildGrills: La misma hacha que apenas hizo mella tras múltiples golpes ayer no estaba sufriendo hoy.
+WildGrills: La hoja se hundió profundamente en la madera. Incluso el sonido era diferente.
+WildGrills: «¿Qué? ¿Esta madera es más débil que la de ayer?».
 WildGrills: No he cambiado de hacha.
-WildGrills: Mi condición es buena hoy, y el árbol también parece blando.
-WildGrills: Sea como sea, la duda quedó en el aire, pero lo dejé pasar ya que jugaba a mi favor.
-WildGrills: «Lo que funciona, funciona».
+WildGrills: Mi condición es buena hoy y el árbol parece débil también.
+WildGrills: Sea como fuere, la pregunta quedó sin respuesta, pero lo dejé pasar ya que funcionaba a mi favor.
+WildGrills: «Lo bueno, bueno es».
 WildGrills: ¡Zas! ¡Zas! ¡Crac!
-WildGrills: Al rato, golpeé el árbol tres veces más y miré el centro.
-WildGrills: El centro del tronco estaba prácticamente hueco. Un golpe más en el lado opuesto y caería.
+WildGrills: Al cabo de un rato, corté el árbol tres veces más y miré el centro.
+WildGrills: El centro de la madera estaba casi completamente hueco. Un golpe más en el lado opuesto haría que cayera.
 WildGrills: «¿Ya?».
-WildGrills: Literalmente ayer, me tomó un día entero balancear el hacha para talar un solo árbol.
+WildGrills: Justo ayer, me llevó un día entero de balancear el hacha talar un solo árbol.
 WildGrills: Luego me topé con un osobúho y casi muero.
-WildGrills: Decir que era simplemente porque es un árbol diferente o porque estoy en buena forma dejaba demasiadas dudas.
+WildGrills: Decir simplemente que es porque es un árbol diferente, o porque mi condición es buena, planteaba varias dudas.
 WildGrills: Pero no carece de explicación. Había diferencias respecto a ayer.
-WildGrills: «¿Es de verdad por la técnica de energía interna?».
-WildGrills: Es la respuesta más probable. Esa es la única diferencia con respecto a ayer.
-WildGrills: De todos modos, volverse más fuerte nunca viene mal, y en un entorno como este la fuerza importa muchísimo.
-WildGrills: «Tendré que esforzarme aún más a partir de ahora».
-WildGrills: ¿Quién iba a pensar que una simple técnica de energía interna pudiera recortar tanto el tiempo de trabajo? Qué mundo tan extraño.
-WildGrills: Desde la mezcla precisa de fantasía y artes marciales, hasta la existencia de superhumanos capaces de reventar montañas enteras.
-WildGrills: Irónicamente, esta misma gente se negaba a creer que una sola bomba pudiera borrar una ciudad del mapa. Cuando su propia existencia es una bomba nuclear andante.
-WildGrills: «Tengo verdadera curiosidad por el mundo exterior».
-WildGrills: El mundo que se ve a través de la galería es estrecho. Y sumamente subjetivo.
-WildGrills: Bueno, el mal trato hacia el país élfico de Alvenheim es universal en todas las naciones.
-WildGrills: Me moví hacia el lado opuesto del árbol mientras pensaba en cualquier cosa.
-WildGrills: Darle aquí haría que el árbol cayera en la dirección que quiero.
+WildGrills: «¿Es realmente por la técnica de energía interna?».
+WildGrills: Esa es la respuesta más probable. Esa es la única diferencia con respecto a ayer.
+WildGrills: De todos modos, volverse más fuerte nunca puede hacer daño, y en un entorno como este la fuerza importa mucho.
+WildGrills: «Tendré quién sabe qué trabajar aún más duro a partir de ahora».
+WildGrills: ¿Quién iba a decir que una simple técnica de energía interna podría recortar tanto el tiempo de trabajo? Qué mundo tan extrañamente fascinante.
+WildGrills: Desde la mezcla adecuada de fantasía y artes marciales, hasta la existencia de superhumanos capaces de hacer volar montañas por los aires.
+WildGrills: Irónicamente, esta misma gente se negaba a creer que una sola bomba pudiera borrar una ciudad del mapa. Cuando su propia existencia es una bomba nuclear en sí misma.
+WildGrills: «Tengo mucha curiosidad por el mundo exterior».
+WildGrills: El mundo que se muestra a través de las galerías es estrecho. Y extremadamente subjetivo.
+WildGrills: Bueno, el mal trato al país élfico de Alvenheim es universal en todas las naciones.
+WildGrills: Me moví hacia el lado opuesto del árbol mientras pensaba en cosas al azar.
+WildGrills: Golpear aquí haría que el árbol cayera en la dirección que quiero.
 WildGrills: ¡Zas! ¡Kwadeuk! ¡Kwadeudeuk!
-WildGrills: Tras unos cuantos hachazos más, el árbol empezó a tambalearse.
-WildGrills: Medí el ángulo y le di una patada final.
-WildGrills: El alto árbol empezó a inclinarse lentamente con un ¡kwadeuk!
-Narrador: ¡Kuung!
-WildGrills: Talé un árbol en menos de diez minutos. El ritmo de trabajo es rápido, demasiado rápido.
-WildGrills: Miré el árbol caído y revisé mi estado físico.
-WildGrills: Estoy un poco cansado, pero no tanto como para necesitar descansar.
-WildGrills: «Haré un poco más antes de tomarme un descanso».
-WildGrills: Talar un segundo árbol me dejó algo fatigado.
-WildGrills: Pero era literalmente solo sensación de cansancio, y podía talar otro árbol sin problemas.
-WildGrills: Tras derribar tres árboles en total, terminé de ponerlos en la casa de subastas.
-WildGrills: «Empieza a verse espacioso ahora».
-WildGrills: Quizá porque ya he talado cuatro árboles. El área alrededor de la cueva se ha ensanchado.
-WildGrills: Sonreí con satisfacción por un instante y luego entré en la cueva a descansar como es debido.
+WildGrills: Tras unos cuantos golpes más, el árbol empezó a tambalearse.
+WildGrills: Comprobé el ángulo y le di una última patada.
+WildGrills: El alto árbol comenzó a inclinarse lentamente con un sonido de ¡kwadeuk!
+WildGrills: ¡Kuung!
+WildGrills: Talé un árbol en menos de diez minutos. La velocidad de trabajo es rápida, demasiado rápida.
+WildGrills: Miré el árbol caído y comprobé mi condición física.
+WildGrills: Estoy un poco cansado, pero no lo suficiente como para necesitar descansar.
+WildGrills: «Haré un poco más antes de tomar un descanso».
+WildGrills: Cortar un segundo árbol me dejó algo fatigado.
+WildGrills: Pero era literalmente solo una sensación de cansancio, y podía talar un árbol más sin ningún problema.
+WildGrills: Tras talar tres árboles en total, terminé de registrarlos en la casa de subastas.
+WildGrills: «Empieza a parecer espacioso ahora».
+WildGrills: Quizás porque ya he talado 4 árboles. La zona alrededor de la cueva se ha ampliado.
+WildGrills: Sonreí con satisfacción por un momento, luego entré en la cueva para descansar como Dios manda.
 Narrador: Saeaek— Saeaek—
-WildGrills: Round Fluff estaba durmiendo la siesta cuando entré en la cueva.
-WildGrills: Como dije antes, Round Fluff todavía es un cachorro. Seguro dormirá todo el día.
-WildGrills: «El pez también está a salvo».
-WildGrills: Estaba tranquilo en la tina de hierro sin dar un solo aleteo.
-WildGrills: Dejé el hacha y me metí a la galería para ver si había pasado algo.
-WildGrills: No había nada especialmente llamativo, pero había algo que me desconcertaba.
+WildGrills: Round Fluff estaba echándose una siesta cuando entré en la cueva.
+WildGrills: Como dije antes, Round Fluff sigue siendo una cría. Probablemente dormirá todo el día.
+WildGrills: «Los peces también están a salvo».
+WildGrills: Estaba sentado tranquilamente en la tina de hierro sin dar ni un solo aleteo.
+WildGrills: Dejé el hacha y me conecté a la galería, preguntándome si había pasado algo.
+WildGrills: No había nada particularmente notable, pero había algo que me molestaba.
 WildGrills: «El moderador ha estado menos activo últimamente».
-WildGrills: La actividad del moderador había bajado bastante. El mod es el administrador de la galería.
+WildGrills: La actividad del moderador se había reducido un poco. El mod es el administrador de la galería.
 WildGrills: Normalmente, estaría baneando usuarios por publicaciones NSFW (contenido no seguro para el trabajo / obsceno / lascivo), gore o insultos extremos.
 Narrador: Fotos de Noonas
 Narrador: Todos los elfos deberían morir
 Narrador: Aviso de gore) Foto de mi mano
-WildGrills: Dichas publicaciones llevaban ya 10 minutos visibles a pesar de haberse subido.
-WildGrills: Normalmente las habrían borrado en un parpadeo, pero esta vez no fue así.
-WildGrills: Los usuarios aprovecharon la oportunidad y comenzaron a desatar sus deseos sin ningún freno.
-WildGrills: ....
-WildGrills: Hice como que no me importaba, pero pinché a escondidas en una publicación.
-WildGrills: Estando en este páramo vacío, la galería es mi único placer.
-WildGrills: Por supuesto, no es una necesidad urgente, más bien un regalo para la vista.
-WildGrills: Estoy demasiado ocupado intentando sobrevivir como para darme el lujo de pensar en esas cosas.
-Narrador: Sr. Grills. Por favor, mire esto.
-WildGrills: Tras refrescar la página varias veces, un título me llamó la atención.
+WildGrills: Esas publicaciones se habían mantenido durante 10 minutos a pesar de haber sido subidas.
+WildGrills: Normalmente las habrían cortado en un instante, pero esta vez no fue así.
+WildGrills: Los usuarios se tomaron eso como una oportunidad y empezaron a desatar sus deseos sin freno.
+WildGrills: ...
+WildGrills: Hice como que no me importaba, pero pinché disimuladamente en una publicación.
+WildGrills: Estando en este desierto vacío, la galería es mi único placer.
+WildGrills: Por supuesto, no es una necesidad urgente, más bien un poco de estímulo visual.
+WildGrills: Estoy demasiado ocupado intentando sobrevivir como para tener lujo para esas cosas.
+Narrador: Sr. Grills. Por favor, eche un vistazo.
+WildGrills: Tras actualizar varias veces, un título me llamó la atención.
 WildGrills: «¿AllFather?».
 WildGrills: Normalmente lo habría pasado por alto, pero el autor es un apodo fijo conocido, así que no pude ignorarlo.
-WildGrills: Hice clic de inmediato.
-Narrador: Título: Sr. Grills. Por favor, mire esto.
+WildGrills: Hice clic inmediatamente.
+Narrador: Título: Sr. Grills. Por favor, eche un vistazo.
 Narrador: Autor: AllFather
-AllFather: El objeto que pidió ya está listo. Siéntase libre de abrir un intercambio en cualquier momento.
-AllFather: Parece que la medicina que mencioné antes está terminada. Medicina hecha a base de ranas venenosas doradas.
-AllFather: Dijeron que consumirla otorgaría resistencia permanente al veneno, por lo que es absolutamente necesaria.
+AllFather: El objeto que pediste está listo. Siéntete libre de abrir un intercambio cuando quieras.
+AllFather: Parece que la medicina que mencioné antes está terminada. Medicina hecha a partir de ranas venenosas doradas.
+AllFather: Dijeron que consumirla otorgaría permanentemente resistencia al veneno, por lo que es absolutamente necesaria.
 WildGrills: ¿Has completado la medicina que mencionaste antes?
-AllFather: Sí. Preparé para diez días. Creo que necesitaré más especímenes para el resto.
-WildGrills: Te los daré enseguida en cuanto cace ranas doradas.
+AllFather: Sí. Hice para diez días. Creo que necesitaré más especímenes para el resto.
+WildGrills: Te los daré enseguida cuando atrape ranas doradas.
 AllFather: Gracias. Estaré esperando.
 WildGrills: La resistencia al veneno dispararía mis probabilidades de supervivencia.
-WildGrills: Lo que significa que debo cazar ranas venenosas doradas otra vez.
-WildGrills: Tras haber descansado bien, tomé la ballesta que estaba apoyada contra la pared.
-WildGrills: Las flechas que le había disparado a la cabeza al osobúho la última vez seguían intactas.
+WildGrills: Lo que significa que debo cazar ranas venenosas doradas de nuevo.
+WildGrills: Debía de haber descansado bien, así que cogí la ballesta apoyada contra la pared.
+WildGrills: Las flechas que había disparado a la cabeza del osobúho la última vez seguían intactas.
 WildGrills: «Increíble».
-WildGrills: En medio del pánico de aquel momento, puse el cadáver en la subasta con las flechas aún clavadas.
-WildGrills: Pero la flecha clavada en su cabeza se cayó sola, como si no estuviera incluida en el lote.
+WildGrills: En mi pánico de entonces, había puesto el cadáver en subasta con las flechas todavía clavadas.
+WildGrills: Pero la flecha clavada en su cabeza se cayó sola, como si no estuviera incluida.
 WildGrills: Casi pierdo las flechas y los arpones que tanto me había costado conseguir.
-Narrador: Kiiiik—
-WildGrills: Tensé la cuerda de la ballesta. Cedió sin ningún esfuerzo.
-WildGrills: Lo que antes me exigía emplear toda mi fuerza para tensar, ahora se lograba con solo apretar los dientes con fuerza.
+WildGrills: Kiiiik—
+WildGrills: Tensé la cuerda de la ballesta. Cendió sin esfuerzo.
+WildGrills: Lo que originalmente requería toda mi fuerza para tirar, ahora terminaba con solo apretar los dientes con fuerza.
 WildGrills: «Mi fuerza definitivamente ha mejorado».
-WildGrills: Esto terminó de convencerme. No es que solo esté golpeando árboles más débiles.
-WildGrills: Mi fuerza ha aumentado de verdad. Todo por una simple técnica de energía interna.
-WildGrills: Fue un cambio tan drástico que me provocó dudas en lugar de asombro.
-WildGrills: Debería publicar pronto en la galería y pedirle consejo a HeavenlyDemon o SwordMaster.
-WildGrills: «Los preparativos están listos...».
-WildGrills: Comprobé a Round Fluff, que dormía plácidamente, y al pez en la tina de acero.
-WildGrills: No hay nada fuera de lugar. Ahora solo tengo que cazar ranas venenosas doradas.
-Por si acaso, me llevé la espada y el escudo para prepararme ante cualquier imprevisto.
-WildGrills: No olvidé guardarme unas cuantas byeokgokdan en el bolsillo.
+WildGrills: Esto me convenció. No solo estoy apuntando a árboles más débiles.
+WildGrills: Mi fuerza ha aumentado genuinamente. Solo por una simple técnica de energía interna.
+WildGrills: Fue un fenómeno tan drástico que surgieron preguntas en lugar de admiración.
+WildGrills: Debería publicar pronto en la galería y pedir consejo a HeavenlyDemon o SwordMaster.
+WildGrills: «Los preparativos están listos...»
+WildGrills: Comprobé a Round Fluff, que dormía profundamente, y al pez en la tina de acero.
+WildGrills: No hay nada problemático. Ahora solo necesito cazar ranas venenosas doradas.
+WildGrills: Por si acaso, llevé mi espada y mi escudo para prepararme ante cualquier imprevisto.
+WildGrills: No olvidé meter unos cuantos *byeokgokdan* en mi bolsillo.
 WildGrills: Tras completar todos los preparativos y salir de la cueva.
-WildGrills: «No irá a aparecer un ladrón, ¿verdad?».
-WildGrills: Caminé hacia el río mientras tenía ese extraño presentimiento.
-Narrador: Sucedió después de que Grills se marchara al río a cazar.
-Narrador: En la cueva solo resonaban los chapoteos del pez y los suaves ronquidos del cachorro de osobúho.
-Narrador: Aparte de eso, la cueva estaba silenciosa y tranquila. De vez en cuando se oía el canto de algún pájaro, pero nada fuera de lo común.
+WildGrills: «Un ladrón no aparecerá, ¿verdad?».
+WildGrills: Caminé hacia el río mientras albergaba un pensamiento extraño.
+Narrador: Fue después de que Grills se hubiera marchado al río a cazar.
+Narrador: La cueva solo resonaba con los chapoteos del pez y los suaves ronquidos del cachorro de osobúho.
+Narrador: Aparte de eso, la cueva estaba tranquila y pacífica. Ocasionalmente se oían sonidos de pájaros, pero nada destacable.
 Narrador: Frufrú—
-Narrador: En eso, se escuchó un frufrú entre los espesos árboles.
-Narrador: Al principio parecía ser solo el viento, pero no lo era.
-Narrador: ¡Zas!—
+Narrador: Entonces se oyó un frufrú entre los árboles espesos.
+Narrador: Al principio, parecía ser solo el viento, pero no lo era.
+Narrador: Zas—
 Narrador: Un animal apareció entre los frondosos árboles.
-Narrador: Tenía unos brazos largos en comparación con sus cortas patas. Unas garras afiladas se extendían largamente desde la punta de sus dedos.
-Narrador: Su cuerpo cubierto de pelaje se movía muy despacio, realmente lento.
-Narrador: Caminando sobre sus largos brazos como un gorila, su destino era claro.
+Narrador: Tenía los brazos largos en comparación con sus cortas piernas. Unas garras afiladas se extendían largamente desde la punta de sus dedos.
+Narrador: Su cuerpo cubierto de pelaje se movía muy lentamente, muy lentamente.
+Narrador: Caminando sobre sus largos brazos como un gorila, su destino estaba claro.
 Narrador: ¡Chapuzón! ¡Chapuzón!
-Narrador: Iba hacia la tina de hierro que contenía el pez.
-Narrador: Aunque su avance era lento, no había nadie vigilando.
-Narrador: Aunque le tomara tiempo, tarde o temprano alcanzaría la tina de hierro.
-Narrador: El animal avanzaba con tanta calma como la expresión relajada de su rostro.
+Narrador: Era la tina de hierro que contenía el pez.
+Narrador: Aunque era un avance lento, no había nadie haciendo guardia.
+Narrador: Incluso si lleva tiempo, eventualmente llegará a la tina de hierro.
+Narrador: El animal avanzaba con tanta tranquilidad como su rostro de aspecto pausado.
 WildGrills: ¿Qué?
-Narrador: De no haber sido por Grills, que regresó porque había olvidado el antídoto.
-Narrador: El animal, que casi había llegado a la tina de hierro, giró la cabeza al escuchar la voz.
+Narrador: De no haber sido por Grills, que volvió porque se había olvidado el antídoto.
+Narrador: El animal, que casi había llegado a la tina de hierro, giró la cabeza al oír la voz.
 Narrador: Incluso el acto de girar la cabeza es extremadamente lento.
-Narrador: Grills, quien inesperadamente se encontró cara a cara con este ladrón, murmuró en voz baja:
-WildGrills: ...¿Un perezoso?</textarea>
+Narrador: Grills, que se encontró inesperadamente cara a cara con este ladrón, murmuró en voz baja.
+WildGrills: ¿...Un perezoso?</textarea>
 <button id="clear" type="button" aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 10v6M14 10v6"/></svg></button>
 <div id="ask" hidden><span>¿Borrar todo el texto?</span><button type="button" class="main" id="askYes">Sí, borrar</button><button type="button" id="askNo">Cancelar</button></div>
 </div>
@@ -298,31 +294,6 @@ WildGrills: ...¿Un perezoso?</textarea>
 </div>
 
 <div style="display:grid;gap:16px">
-
-<!-- CAJA DE TRADUCCIÓN CON IA (CONECTADA A TU CLOUDFLARE) -->
-<section class="ai-box">
-<h2>Traducir con IA</h2>
-<p class="hint">Traduce directo a los personajes usando tu propio puente gratuito.</p>
-
-<div style="margin-bottom:8px">
-<label for="workerUrl" style="margin-top:0">Tu puente Cloudflare:</label>
-<input type="text" id="workerUrl" value="https://delicate-math-bfe2.guillermop2019.workers.dev" autocomplete="off">
-</div>
-
-<div style="margin-bottom:8px">
-<label for="apiKey" style="margin-top:0">Clave de Gemini API:</label>
-<input type="password" id="apiKey" placeholder="Pega tu clave Gemini aquí" autocomplete="off">
-</div>
-
-<label for="aiText">Texto en inglés:</label>
-<textarea id="aiText" placeholder="Pega aquí el texto original en inglés..."></textarea>
-
-<div class="bar">
-<button class="main" id="aiBtn">Traducir y cargar al lector</button>
-</div>
-<div id="aiStatus"></div>
-</section>
-
 <section>
 <h2>Voz y velocidad</h2>
 <label for="defVoice">Voz general</label>
@@ -337,12 +308,9 @@ WildGrills: ...¿Un perezoso?</textarea>
 
 <section>
 <h2>Personajes</h2>
-<p class="hint">Cada personaje tiene su propia voz, tono y velocidad asignados.</p>
+<p class="hint">Si una línea empieza con el texto de la izquierda, se lee con esa voz.</p>
 <div id="rules"></div>
-<div class="rules-actions">
-  <button id="addRule">Añadir personaje</button>
-  <button id="resetRules">Restablecer personajes originales</button>
-</div>
+<button id="addRule">Añadir personaje</button>
 </section>
 
 <section>
@@ -357,60 +325,38 @@ WildGrills: ...¿Un perezoso?</textarea>
 <script>
 (function(){
 var $=function(id){return document.getElementById(id)};
-var synth=window.speechSynthesis, voices=[], rules=[], lines=[], idx=0, token=0, KEY="lector-voz-v3";
+var synth=window.speechSynthesis, voices=[], rules=[], lines=[], idx=0, token=0, KEY="lector-voz-v5";
 
 var DEFAULT_RULES=[
-  {p:"WildGrills:",vn:"Microsoft Pablo",t:1,s:1},
-  {p:"LongLiveTheSun:",vn:"Google español",t:0.9,s:1},
-  {p:"AllFather:",vn:"Google español",t:0.7,s:0.9},
-  {p:"PassingDwarf:",vn:"Google español",t:1.2,s:1.1},
-  {p:"HeavenlyDemon:",vn:"Microsoft Helena",t:1,s:1},
-  {p:"ChaengguPrincess:",vn:"Microsoft Laura",t:1.25,s:1.1},
-  {p:"StarlightPrincess:",vn:"Microsoft Laura",t:1,s:1},
-  {p:"SwordMaster:",vn:"Microsoft Laura",t:0.8,s:1},
-  {p:"Narrador:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
-  {p:"Anónimo:",vn:"Google español de Estados Unidos",t:1.3,s:1.15}
-];
+{p:"WildGrills:",vn:"Microsoft Pablo",t:1,s:1},
+{p:"LongLiveTheSun:",vn:"Google español",t:0.9,s:1},
+{p:"AllFather:",vn:"Google español",t:0.7,s:0.9},
+{p:"PassingDwarf:",vn:"Google español",t:1.2,s:1.1},
+{p:"HeavenlyDemon:",vn:"Microsoft Helena",t:1,s:1},
+{p:"ChaengguPrincess:",vn:"Microsoft Laura",t:1.25,s:1.1},
+{p:"StarlightPrincess:",vn:"Microsoft Laura",t:1,s:1},
+{p:"SwordMaster:",vn:"Microsoft Laura",t:0.8,s:1},
+{p:"Narrador:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
+{p:"Anónimo:",vn:"Google español de Estados Unidos",t:1.3,s:1.15}];
+
+rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
 
 function hs(s){var h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return s.length+":"+h}
 var BASE=hs($("text").value);
 
-function save(){
-  try{
-    localStorage.setItem(KEY,JSON.stringify({
-      b:BASE,
-      t:$("text").value,
-      d:$("dict").value,
-      r:$("rate").value,
-      v:$("vol").value,
-      p:$("pitch").value,
-      dv:$("defVoice").value,
-      rules:rules
-    }));
-  }catch(e){}
-}
-
-function load(){
-  try{
-    return JSON.parse(localStorage.getItem(KEY)||"null");
-  }catch(e){
-    return null;
-  }
-}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({b:BASE,t:$("text").value,d:$("dict").value,r:$("rate").value,v:$("vol").value,p:$("pitch").value,dv:$("defVoice").value,rules:rules}))}catch(e){}}
+function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||"null");return s}catch(e){return null}}
 
 var saved=load();
 if(saved){
-  if(saved.t)$("text").value=saved.t;
+  if(saved.b===BASE)$("text").value=saved.t||"";
   $("dict").value=saved.d||"";
   $("rate").value=saved.r||1;
   $("vol").value=saved.v||1;
   $("pitch").value=saved.p||1;
-  rules=saved.rules||[];
-}
-
-// Asegurar que los 10 personajes siempre estén presentes y con nombre
-if(!rules.length || rules.length < 5 || !rules.some(function(r){return r.p && r.p.indexOf("WildGrills")===0})){
-  rules=JSON.parse(JSON.stringify(DEFAULT_RULES));
+  if(saved.rules && saved.rules.length >= 5 && saved.rules.some(function(r){return r.p && r.p.indexOf("WildGrills")===0})){
+    rules=saved.rules;
+  }
 }
 
 function labels(){
@@ -422,385 +368,4 @@ function labels(){
 function voiceOptions(sel,val){
   sel.innerHTML="";
   var o=document.createElement("option");o.value="";o.textContent="Voz general";sel.appendChild(o);
-  voices.forEach(function(v){
-    var x=document.createElement("option");
-    x.value=v.voiceURI;
-    x.textContent=v.name+" ("+v.lang+")";
-    sel.appendChild(x);
-  });
-  sel.value=val||"";
-}
-
-function matchVoice(wantedName){
-  if(!wantedName || !voices.length) return "";
-  var clean=wantedName.toLowerCase();
-  // 1. Coincidencia exacta
-  var f=voices.find(function(v){return v.name.toLowerCase()===clean || v.voiceURI.toLowerCase()===clean});
-  if(f) return f.voiceURI;
-  // 2. Coincidencia parcial por nombre
-  f=voices.find(function(v){return v.name.toLowerCase().indexOf(clean)===0 || clean.indexOf(v.name.toLowerCase())===0});
-  if(f) return f.voiceURI;
-  // 3. Coincidencia por género/idioma español
-  var esVoices=voices.filter(function(v){return /^es/i.test(v.lang)});
-  if(esVoices.length){
-    if(clean.indexOf("helena")!==-1 || clean.indexOf("laura")!==-1){
-      var fem=esVoices.find(function(v){return /female|mujer|helena|laura|monica|paulina/i.test(v.name)});
-      if(fem) return fem.voiceURI;
-    }
-    if(clean.indexOf("pablo")!==-1){
-      var male=esVoices.find(function(v){return /male|hombre|pablo|jorge/i.test(v.name)});
-      if(male) return male.voiceURI;
-    }
-    return esVoices[0].voiceURI;
-  }
-  return "";
-}
-
-function fillVoices(){
-  voices=synth.getVoices().slice().sort(function(a,b){return a.lang.localeCompare(b.lang)||a.name.localeCompare(b.name)});
-  var d=$("defVoice");d.innerHTML="";
-  voices.forEach(function(v){
-    var x=document.createElement("option");
-    x.value=v.voiceURI;
-    x.textContent=v.name+" ("+v.lang+")";
-    d.appendChild(x);
-  });
-  
-  var want=(saved&&saved.dv)||"";
-  if(want&&voices.some(function(v){return v.voiceURI===want})) d.value=want;
-  else{
-    var es=voices.find(function(v){return /^es/i.test(v.lang)});
-    if(es) d.value=es.voiceURI;
-  }
-  
-  // Asignar voces a personajes
-  rules.forEach(function(r){
-    if(!r.v || !voiceFor(r.v)){
-      r.v=matchVoice(r.vn || r.p.replace(/:$/,""));
-    }
-  });
-  renderRules();
-}
-
-function renderRules(){
-  var box=$("rules");box.innerHTML="";
-  rules.forEach(function(r,i){
-    var row=document.createElement("div");row.className="rule";
-    var p=document.createElement("input");p.type="text";p.value=r.p||"";p.setAttribute("aria-label","Inicio de línea del personaje");
-    p.oninput=function(){r.p=p.value;save()};
-    var s=document.createElement("select");s.setAttribute("aria-label","Voz del personaje");
-    voiceOptions(s,r.v);
-    s.onchange=function(){r.v=s.value;save()};
-    var b=document.createElement("button");b.textContent="Quitar";
-    b.onclick=function(){rules.splice(i,1);renderRules();save()};
-    
-    function sl(txt,key){
-      var w=document.createElement("div"),l=document.createElement("label"),x=document.createElement("input");
-      l.className="mini";l.textContent=txt+" "+(r[key]||1);
-      x.type="range";x.min=0.5;x.max=2;x.step=0.05;x.value=r[key]||1;
-      x.setAttribute("aria-label",txt+" del personaje");
-      x.oninput=function(){r[key]=+x.value;l.textContent=txt+" "+r[key];save()};
-      w.appendChild(l);w.appendChild(x);return w;
-    }
-    
-    var tb=document.createElement("button");tb.textContent="Probar voz";
-    tb.onclick=function(){
-      token++;synth.cancel();
-      var u=new SpeechSynthesisUtterance("Hola, soy "+(r.p?r.p.replace(/:$/,""):"este personaje")+".");
-      var v=voiceFor(r.v)||voiceFor($("defVoice").value);
-      if(v){u.voice=v;u.lang=v.lang}
-      u.rate=+$("rate").value*(r.s||1);
-      u.volume=+$("vol").value;
-      u.pitch=Math.min(2,+$("pitch").value*(r.t||1));
-      synth.speak(u);
-    };
-    
-    row.appendChild(p);row.appendChild(s);row.appendChild(sl("Tono","t"));row.appendChild(sl("Velocidad","s"));row.appendChild(tb);row.appendChild(b);
-    box.appendChild(row);
-  });
-}
-
-function voiceFor(uri){
-  return voices.find(function(v){return v.voiceURI===uri});
-}
-
-function dictMap(){
-  var m=Object.create(null);
-  $("dict").value.split("\n").forEach(function(l){
-    var k=l.indexOf("=");if(k<1)return;
-    var a=l.slice(0,k).trim().toLowerCase(),b=l.slice(k+1).trim();
-    if(a&&b)m[a]=b;
-  });
-  return m;
-}
-
-function parse(){
-  var dm=dictMap();lines=[];
-  $("text").value.split("\n").forEach(function(raw){
-    if(!raw.trim())return;
-    var trimmed=raw.trim(),rule=null,prefix="";
-    for(var i=0;i<rules.length;i++){
-      var p=(rules[i].p||"").trim();
-      if(p&&trimmed.toLowerCase().indexOf(p.toLowerCase())===0){
-        rule=rules[i];prefix=trimmed.slice(0,p.length);break;
-      }
-    }
-    var body=rule?trimmed.slice(prefix.length).trim():trimmed;
-    var words=[],spoken="",re=/\S+/g,m;
-    while((m=re.exec(body))){
-      var w=m[0],parts=w.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u),rep=w;
-      if(dm[w.toLowerCase()])rep=dm[w.toLowerCase()];
-      else if(parts&&dm[parts[2].toLowerCase()])rep=parts[1]+dm[parts[2].toLowerCase()]+parts[3];
-      words.push({t:w,s:spoken.length});
-      spoken+=rep+" ";
-    }
-    lines.push({prefix:prefix,body:body,words:words,spoken:spoken,voice:rule&&rule.v?rule.v:"",t:rule&&rule.t||1,s:rule&&rule.s||1});
-  });
-}
-
-function render(){
-  var r=$("reader");r.innerHTML="";
-  lines.forEach(function(L,i){
-    var d=document.createElement("div");d.className="line";d.id="L"+i;
-    if(L.prefix){var s=document.createElement("span");s.className="who";s.textContent=L.prefix;d.appendChild(s)}
-    L.words.forEach(function(w,j){var s=document.createElement("span");s.className="w";s.id="W"+i+"_"+j;s.textContent=w.t+" ";d.appendChild(s)});
-    d.onclick=function(){start(i)};
-    r.appendChild(d);
-  });
-}
-
-function clearHl(){
-  document.querySelectorAll(".w.on").forEach(function(e){e.classList.remove("on")});
-  document.querySelectorAll(".line.active").forEach(function(e){e.classList.remove("active")});
-}
-
-function mark(i,ch){
-  var L=lines[i],k=0;
-  for(var j=0;j<L.words.length;j++){if(L.words[j].s<=ch)k=j;else break}
-  document.querySelectorAll(".w.on").forEach(function(e){e.classList.remove("on")});
-  var el=$("W"+i+"_"+k);
-  if(el){el.classList.add("on");el.scrollIntoView({block:"center",behavior:"smooth"})}
-}
-
-function speak(i){
-  if(i>=lines.length){stop(true);$("msg").textContent="Terminó la lectura.";return}
-  idx=i;var t=++token,L=lines[i];
-  clearHl();var le=$("L"+i);if(le){le.classList.add("active");le.scrollIntoView({block:"center",behavior:"smooth"})}
-  var u=new SpeechSynthesisUtterance(L.spoken);
-  var v=voiceFor(L.voice)||voiceFor($("defVoice").value);
-  if(v){u.voice=v;u.lang=v.lang}
-  u.rate=+$("rate").value*(L.s||1);u.volume=+$("vol").value;u.pitch=Math.min(2,+$("pitch").value*(L.t||1));
-  u.onboundary=function(e){if(t===token&&(!e.name||e.name==="word"))mark(i,e.charIndex)};
-  u.onend=function(){if(t===token)speak(i+1)};
-  u.onerror=function(){if(t===token&&!synth.speaking)speak(i+1)};
-  synth.speak(u);
-}
-
-function start(i){
-  if(!synth){$("msg").textContent="Este navegador no tiene lectura de voz. Prueba con Chrome, Edge o Safari.";return}
-  paused=false;synth.cancel();synth.resume();parse();
-  if(!lines.length){$("msg").textContent="Escribe o pega un texto primero.";return}
-  render();$("editBox").hidden=true;$("readBox").hidden=false;$("edit").hidden=false;$("msg").textContent="";
-  $("pause").textContent="Pausa";save();speak(i||0);fl();
-}
-
-function stop(keep){
-  token++;synth.cancel();synth.resume();$("pause").textContent="Pausa";$("fl").hidden=true;paused=false;
-  if(!keep)clearHl();
-}
-
-$("play").onclick=function(){start(0)};
-var paused=false;
-
-function tp(){
-  if(paused){paused=false;synth.resume();$("pause").textContent="Pausa";fl()}
-  else if(synth.speaking){paused=true;synth.pause();$("pause").textContent="Continuar";fl()}
-}
-
-function fr(){var s=document.querySelector("section");return s?s.getBoundingClientRect().left:0}
-
-function fl(){
-  var b=$("fl"),ps=paused;
-  var L=fr(),ok=L>=76;b.hidden=false;b.className=ok?"free":"";b.style.left=ok?(L-64)+"px":"";
-  b.textContent=ps?"▶":"⏸";
-  b.setAttribute("aria-label",ps?"Continuar lectura":"Pausar lectura");
-}
-
-$("pause").onclick=tp;$("fl").onclick=tp;
-window.addEventListener("resize",function(){if(!$("fl").hidden)fl()});
-document.addEventListener("click",function(e){
-  if($("readBox").hidden||paused||!synth.speaking)return;
-  if(e.target.closest("section,button,select,input,textarea,a"))return;
-  tp();
-});
-
-$("stop").onclick=function(){stop()};
-$("edit").onclick=function(){stop();$("readBox").hidden=true;$("editBox").hidden=false;$("edit").hidden=true;$("msg").textContent=""};
-$("addRule").onclick=function(){rules.push({p:"Nuevo:",v:"",t:1,s:1});renderRules();save()};
-$("resetRules").onclick=function(){rules=JSON.parse(JSON.stringify(DEFAULT_RULES));fillVoices();save()};
-
-["rate","vol","pitch"].forEach(function(id){$(id).oninput=function(){labels();save()}});
-["text","dict"].forEach(function(id){$(id).oninput=save});
-$("defVoice").onchange=save;
-
-var EN=new Set("the and to of was that with you it in for but not this his have are what they my so".split(" "));
-var ES=new Set("el la de que y en un una los las se por con es su para lo como más pero al del mi yo tu ya fue muy sin sobre también está estaba había".split(" "));
-function detect(t){var w=t.slice(0,4000).toLowerCase().match(/[a-záéíóúñü]+/g)||[],e=0,s=0;w.forEach(function(x){if(EN.has(x))e++;if(ES.has(x))s++});return e>=6&&e>s*1.5?"en":s>=6&&s>e*1.5?"es":""}
-function marked(l){var t=l.trim().toLowerCase();return rules.some(function(r){var p=(r.p||"").trim().toLowerCase();return p&&t.indexOf(p)===0})}
-function needConv(t){var L=t.split("\n").filter(function(x){return x.trim()});return L.length>1&&L.filter(marked).length/L.length<0.5}
-
-function convert(t,def){
-  var names={},out=[];
-  rules.forEach(function(r){var p=(r.p||"").trim();if(p)names[p.replace(/:$/,"").toLowerCase()]=p});
-  t.split("\n").forEach(function(raw){
-    var l=raw.trim().replace(/\\([~_])/g,"$1"),m,who,body;
-    if(!l||/^[\s*_=~-]{3,}$/.test(l))return;
-    if(marked(l)){out.push(l);return}
-    if((m=l.match(/^ㄴ\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u))){who=names[m[1].toLowerCase()]||"Narrador:";body=m[2]}
-    else if((m=l.match(/^ㄴ\s*(.*)$/u))){who="Anónimo:";body=m[1]}
-    else if((m=l.match(/^\[([\p{L}\p{N}_-]{2,40}):\s*(.*?)\]?$/u))){who=names[m[1].toLowerCase()]||"Narrador:";body=m[2]}
-    else if(/^\[.*\]$/.test(l)||/^(título|autor|title|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)){who="Narrador:";body=l}
-    else{who=def;body=l.replace(/^[—–-]\s*/,"")}
-    out.push(who+" "+body);
-  });
-  return out.join("\n");
-}
-
-function copyText(s){return new Promise(function(ok){function fb(){try{var a=document.createElement("textarea");a.value=s;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();var r=document.execCommand("copy");document.body.removeChild(a);ok(r)}catch(e){ok(false)}}try{navigator.clipboard.writeText(s).then(function(){ok(true)},fb)}catch(e){fb()}})}
-function updTrash(){var h=!$("text").value.length;$("clear").hidden=h;if(h)$("ask").hidden=true}
-$("clear").onclick=function(){$("ask").hidden=false};
-$("askNo").onclick=function(){$("ask").hidden=true};
-$("askYes").onclick=function(){$("text").value="";$("ask").hidden=true;save();checkLang();$("text").focus()};
-
-function checkLang(){
-  updTrash();
-  var t=$("text").value,l=detect(t),b=$("lang"),btn=$("langBtn");
-  if(l==="en"){b.hidden=false;$("langWho").hidden=true;$("langMsg").textContent="Texto en inglés detectado.";btn.textContent="Copiar para traducir";btn.dataset.m="copy"}
-  else if(l==="es"&&needConv(t)){b.hidden=false;$("langWho").hidden=false;$("langMsg").textContent="Texto sin personajes marcados.";btn.textContent="Convertir a personajes";btn.dataset.m="conv"}
-  else b.hidden=true;
-}
-
-$("langBtn").onclick=function(){
-  var t=$("text").value;
-  if(this.dataset.m==="copy"){copyText(t).then(function(ok){$("langMsg").textContent=ok?"Copiado.":"Selecciona el texto y cópialo a mano."})}
-  else{$("text").value=convert(t,$("langWho").value);save();checkLang()}
-};
-$("text").addEventListener("input",checkLang);checkLang();
-
-/* MEMORIA DE CLAVE Y ENLACE DE WORKER */
-var KEY_API="lector_gemini_key_v3";
-var KEY_WORKER="lector_cf_worker_url_v3";
-var DEFAULT_WORKER="https://delicate-math-bfe2.guillermop2019.workers.dev";
-
-try{
-  var sk=localStorage.getItem(KEY_API);if(sk&&sk.trim()){$("apiKey").value=sk.trim()}
-  var sw=localStorage.getItem(KEY_WORKER);
-  if(sw&&sw.trim()){$("workerUrl").value=sw.trim()}
-  else{$("workerUrl").value=DEFAULT_WORKER;localStorage.setItem(KEY_WORKER,DEFAULT_WORKER)}
-}catch(e){$("workerUrl").value=DEFAULT_WORKER}
-
-$("apiKey").oninput=function(){try{localStorage.setItem(KEY_API,$("apiKey").value.trim())}catch(e){}};
-$("workerUrl").oninput=function(){try{localStorage.setItem(KEY_WORKER,$("workerUrl").value.trim())}catch(e){}};
-
-var MASTER_SYS_PROMPT=[
-"Eres el traductor y formateador oficial de la novela web de WildGrills.",
-"Tu objetivo es traducir el texto en inglés al español y entregar DIRECTAMENTE el texto listo para un lector de voz con personajes.",
-"",
-"REGLAS DE TRADUCCIÓN:",
-"1. Traducción completa y fiel: sin omitir ninguna frase, diálogo, pensamiento o detalle.",
-"2. Nombres propios y usuarios INTACTOS: NO traduzcas ni adaptes: WildGrills, HeavenlyDemon, SwordMaster, StarlightPrincess, PassingDwarf, LongLiveTheSun, ChaengguPrincess, AllFather, Round Fluff, Byeokgokdan, Alvenheim, etc.",
-"3. Risas: cambia 'ja', 'jaja', 'jajaja', 'lol', 'lmao' por 'ha', 'haha', 'hahaha'.",
-"4. Insultos y groserías: mantén la intensidad sin censurar ni suavizar.",
-"5. Español natural sin literalidades forzadas.",
-"6. HeavenlyDemon habla de forma arcaica y solemne en tercera persona ('Este Ser') y trata al otro de tú.",
-"7. Omite separadores de escena de solo asteriscos como '*****'.",
-"",
-"REGLAS DE MARCADO DE PERSONAJES (UNA LÍNEA POR INTERVENCIÓN):",
-"Cada línea de tu respuesta DEBE empezar con el prefijo exacto del personaje:",
-"- WildGrills: (toda la narración en 1ra persona del protagonista, pensamientos entre « », sus diálogos y gritos).",
-"- Narrador: (títulos 'Título: ...', autor 'Autor: ...', fotos '(Foto de ...)', avisos del sistema, sonidos de animales como osobúho o Round Fluff tipo 'Kyuu.', y narración en 3ra persona).",
-"- HeavenlyDemon:",
-"- StarlightPrincess:",
-"- SwordMaster:",
-"- LongLiveTheSun:",
-"- AllFather:",
-"- PassingDwarf:",
-"- ChaengguPrincess:",
-"- Anónimo: (comentarios sin apodo fijo en el foro).",
-"",
-"IMPORTANTE: Responde ÚNICAMENTE con las líneas marcadas 'Marca: texto'. Sin introducciones, sin comentarios, sin bloques de código markdown."
-].join("\n");
-
-async function callGemini(workerBase, key, prompt){
-  var cleanKey = (key||"").trim();
-  var base = (workerBase||"").trim().replace(/\/+$/, "");
-  if(!/^https?:\/\//i.test(base)) base = "https://" + base;
-  var models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
-  var payload = JSON.stringify({
-    contents: [{ parts: [{ text: MASTER_SYS_PROMPT + "\n\nTEXTO EN INGLÉS A TRADUCIR:\n" + prompt }] }],
-    generationConfig: { temperature: 0.3 }
-  });
-  
-  var lastErr = null;
-  for(var m = 0; m < models.length; m++){
-    try {
-      var target = base + "/v1beta/models/" + models[m] + ":generateContent?key=" + encodeURIComponent(cleanKey);
-      var r = await fetch(target, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-goog-api-key": cleanKey
-        },
-        body: payload
-      });
-      if(r.status === 404) continue;
-      var d = await r.json();
-      if(!r.ok) throw new Error((d.error && d.error.message) || ("Error " + r.status));
-      var t = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
-      if(t) return t;
-    } catch(e) {
-      lastErr = e;
-    }
-  }
-  throw lastErr || new Error("No se pudo conectar a través de tu Worker.");
-}
-
-$("aiBtn").onclick=async function(){
-  var wUrl=$("workerUrl").value.trim(),k=$("apiKey").value.trim(),txt=$("aiText").value.trim(),st=$("aiStatus");
-  if(!wUrl){st.textContent="⚠️ El enlace del puente está vacío.";st.style.color="#e11d48";$("workerUrl").focus();return}
-  if(!k){st.textContent="⚠️ Pega tu clave de Gemini API arriba.";st.style.color="#e11d48";$("apiKey").focus();return}
-  if(!txt){st.textContent="⚠️ Pega un texto en inglés en el cuadro.";st.style.color="#e11d48";$("aiText").focus();return}
-  
-  st.textContent="⏳ Conectando por tu puente personal y traduciendo... espera unos segundos...";
-  st.style.color="var(--acc)";
-  $("aiBtn").disabled=true;
-  
-  try{
-    var res=await callGemini(wUrl,k,txt);
-    res=res.replace(/^```[a-z]*\n?/i,"").replace(/\n?```$/i,"").trim();
-    $("text").value=res;
-    BASE=hs(res);
-    save();
-    checkLang();
-    $("aiText").value="";
-    st.textContent="✅ ¡Listo! Texto traducido, personajes marcados y cargado en el lector.";
-    st.style.color="var(--acc)";
-  }catch(e){
-    st.textContent="❌ Error al traducir: "+e.message;
-    st.style.color="#e11d48";
-  }finally{
-    $("aiBtn").disabled=false;
-  }
-};
-
-labels();
-if(!synth){
-  $("msg").textContent="Este navegador no tiene lectura de voz. Prueba con Chrome, Edge o Safari.";
-} else {
-  fillVoices();
-  synth.onvoiceschanged=fillVoices;
-}
-})();
-</script>
-</body>
-</html>
+  voices.fo
