@@ -360,6 +360,35 @@ function loadText(all){
   $("readBox").hidden=true;$("editBox").hidden=false;$("edit").hidden=true;$("msg").textContent="";
   $("text").value=all.join("\n");save();checkLang();
 }
+function hasName(arr,n){return arr.some(function(x){return x.toLowerCase()===n.toLowerCase()})}
+function nameMap(nw){
+  var m={};
+  rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)m[p.toLowerCase()]=p});
+  nw.forEach(function(n){if(!m[n.toLowerCase()])m[n.toLowerCase()]=n});
+  return m;
+}
+function fixLines(arr,nw){
+  var names=nameMap(nw);
+  return arr.map(function(l){
+    var m;
+    if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u)))return (names[m[1].toLowerCase()]||m[1])+": "+m[2];
+    if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*(.+?):\s+(.*)$/u))){
+      var k=m[1].toLowerCase();
+      if(names[k]&&k!=="narrador"&&k!=="anónimo"&&k!=="anonimo")return names[k]+": "+m[2];
+    }
+    return l;
+  });
+}
+function addNewRules(nw){
+  var nar=rules.find(function(r){return (r.p||"").trim().toLowerCase()==="narrador:"})||{},added=[];
+  nw.forEach(function(n){
+    var p=n+":";
+    if(rules.some(function(r){return (r.p||"").trim().toLowerCase()===p.toLowerCase()}))return;
+    rules.push({p:p,vn:nar.vn,v:nar.v||"",t:nar.t||1,s:nar.s||1});added.push(n);
+  });
+  if(added.length){renderRules();save()}
+  return added;
+}
 var busy=false,job=null;
 function setBusy(v){busy=v;$("aiGo").disabled=v;$("aiCont").disabled=v}
 async function runAI(resume){
@@ -378,15 +407,18 @@ async function runAI(resume){
       var d=await callWorker({text:job.parts[job.i],part:job.i+1,total:job.parts.length,previous:job.all.slice(-6).join("\n")},pw);
       var r=splitNew(d.text);
       if(!r.lines.length)throw new Error("La IA devolvió la parte "+(job.i+1)+" vacía.");
-      job.all=job.all.concat(r.lines);
-      r.nw.forEach(function(n){if(job.nw.indexOf(n)<0)job.nw.push(n)});
+      r.nw.forEach(function(n){if(!hasName(job.nw,n))job.nw.push(n)});
+      job.all=job.all.concat(fixLines(r.lines,job.nw));
       try{localStorage.setItem(PWKEY,pw)}catch(e){}
     }
+    job.all=fixLines(job.all,job.nw);
+    var add=addNewRules(job.nw);
     loadText(job.all);
-    $("aiMsg").textContent="Listo: el texto ya está cargado en el lector."+(job.nw.length?" Personajes nuevos (se leen con la voz del Narrador): "+job.nw.join(", ")+". Dime si son hombre o mujer.":"");
+    $("aiMsg").textContent="Listo: el texto ya está cargado en el lector."+(add.length?" Personajes nuevos agregados a «Personajes» con la voz del Narrador: "+add.join(", ")+". Elige su voz cuando quieras.":"");
     job=null;
   }catch(e){
     if(job.all.length){
+      job.all=fixLines(job.all,job.nw);addNewRules(job.nw);
       loadText(job.all);
       $("aiMsg").textContent="Se cargaron las partes 1 a "+job.i+" de "+job.parts.length+". Falló la parte "+(job.i+1)+": "+e.message+" Pulsa «Continuar» para seguir desde ahí, sin repetir lo ya traducido.";
       $("aiCont").textContent="Continuar desde la parte "+(job.i+1);
