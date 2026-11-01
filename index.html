@@ -43,7 +43,6 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .w.on{background:var(--hl);color:var(--hlink);border-radius:3px;padding:0 2px}
 #msg,#aiMsg{color:var(--mute);font-size:.88rem;margin-top:8px}
 #fl{position:fixed;left:max(10px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);z-index:20;width:56px;height:56px;border-radius:28px;background:var(--acc);color:var(--accink);border:0;font-size:1.5rem;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.3)}
-#fl.p{width:auto;padding:0 20px;font-size:1.05rem;font-weight:700}
 .lang{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--acc);border-radius:8px;background:var(--lineact)}
 .lang[hidden]{display:none}
 .lang select{width:auto}
@@ -84,8 +83,10 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div style="display:grid;gap:16px">
 <section>
 <h2>Traducir con IA</h2>
-<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce, marca a los personajes y lo deja cargado en el lector.</p>
+<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. Las líneas sin nombre las dice quien elijas abajo; para cambiar de narrador a mitad del texto, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje).</p>
 <div class="tw"><textarea id="src" placeholder="Pega aquí el texto en inglés"></textarea><button class="trash" id="trashSrc" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
+<label for="aiWho">Líneas sin nombre las dice</label>
+<select id="aiWho"><option value="WildGrills:">WildGrills</option><option value="Narrador:">Narrador</option><option value="Anónimo:">Anónimo</option></select>
 <label for="pw">Contraseña (solo la primera vez)</label>
 <input type="password" id="pw" autocomplete="off" placeholder="Tu contraseña">
 <div class="bar"><button class="main" id="aiGo">Traducir y cargar</button><button id="aiCont" type="button" hidden>Continuar</button></div>
@@ -125,7 +126,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 var $=function(id){return document.getElementById(id)};
 var WORKER="https://delicate-math-bfe2.guillermop2019.workers.dev";
 var CHUNK=10000, PWKEY="lector-voz-pw";
-var synth=window.speechSynthesis, voices=[], rules=[], lines=[], idx=0, token=0, KEY="lector-voz-v2";
+var synth=window.speechSynthesis, voices=[], rules=[], lines=[], token=0, KEY="lector-voz-v2";
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({t:$("text").value,d:$("dict").value,r:$("rate").value,v:$("vol").value,p:$("pitch").value,dv:$("defVoice").value,rules:rules}))}catch(e){}}
 function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||"null");return s}catch(e){return null}}
@@ -142,6 +143,7 @@ if(!rules.length)rules=[
 {p:"StarlightPrincess:",vn:"Microsoft Laura",t:1,s:1},
 {p:"SwordMaster:",vn:"Microsoft Laura",t:0.8,s:1},
 {p:"Narrador:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
+{p:"DontAbandonTheHero:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
 {p:"Anónimo:",vn:"Google español de Estados Unidos",t:1.3,s:1.15}];
 
 function labels(){$("rateO").textContent=$("rate").value+"x";$("volO").textContent=Math.round($("vol").value*100)+"%";$("pitchO").textContent=$("pitch").value}
@@ -236,7 +238,7 @@ function mark(i,ch){
 }
 function speak(i){
   if(i>=lines.length){stop(true);$("msg").textContent="Terminó la lectura.";return}
-  idx=i;var t=++token,L=lines[i];
+  var t=++token,L=lines[i];
   clearHl();var le=$("L"+i);if(le){le.classList.add("active");le.scrollIntoView({block:"center",behavior:"smooth"})}
   var u=new SpeechSynthesisUtterance(L.spoken);
   var v=voiceFor(L.voice)||voiceFor($("defVoice").value);
@@ -342,7 +344,7 @@ async function callWorker(body,pw){
     if(res.ok&&typeof data.text==="string")return data;
     if(res.status===401)throw new Error("La contraseña no es correcta.");
     if(res.status===429&&(data.quota||/quota|per day/i.test(data.error||"")))throw new Error("Se acabó el límite gratis diario de Gemini. Espera unas horas (se reinicia a las 2:00 a. m. hora de Lima) y vuelve a intentar.");
-    if((res.status===429||res.status>=500)&&a<2){await sleep(8000);continue}
+    if(res.status>=500&&!data.tried&&a<1){await sleep(5000);continue}
     throw new Error(data.error||("Error "+res.status));
   }
 }
@@ -359,6 +361,36 @@ function loadText(all){
   if(synth)stop();
   $("readBox").hidden=true;$("editBox").hidden=false;$("edit").hidden=true;$("msg").textContent="";
   $("text").value=all.join("\n");save();checkLang();
+}
+var EXCL={"título":1,"titulo":1,"autor":1,"nota":1,"foto":1,"d":1,"precio":1,"nuevos":1};
+function detectMarks(lines,nw){
+  var names=nameMap(nw),found=[];
+  lines.forEach(function(l){
+    var m=l.match(/^([\p{L}\p{N}_-]{2,40}):/u);
+    if(!m)return;var k=m[1].toLowerCase();
+    if(names[k]||EXCL[k]||hasName(found,m[1]))return;
+    found.push(m[1]);
+  });
+  return found;
+}
+function allNew(){return job.nw.concat(detectMarks(job.all,job.nw).filter(function(n){return !hasName(job.nw,n)}))}
+function preTag(src,def){
+  var names={};
+  rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)names[p.toLowerCase()]=p});
+  names["anonimo"]="Anónimo";
+  var cur=def.replace(/:$/,""),out=[];
+  src.split("\n").forEach(function(raw){
+    var l=raw.trim().replace(/\\([~_])/g,"$1"),m;
+    if(!l||/^[\s*_=~#-]{3,}$/.test(l))return;
+    if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){cur=names[m[1].toLowerCase()]||m[1];return}
+    if((m=l.match(/^ㄴ\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u))){out.push((names[m[1].toLowerCase()]||m[1])+": "+m[2]);return}
+    if((m=l.match(/^ㄴ\s*(.*)$/u))){out.push("Anónimo: "+m[1]);return}
+    if((m=l.match(/^\[([\p{L}\p{N}_-]{2,40}):\s*(.*?)\]?$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
+    if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
+    if(/^(título|titulo|autor|title|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
+    out.push(cur+": "+l.replace(/^[—–-]\s*/,""));
+  });
+  return out.join("\n");
 }
 function hasName(arr,n){return arr.some(function(x){return x.toLowerCase()===n.toLowerCase()})}
 function nameMap(nw){
@@ -397,7 +429,7 @@ async function runAI(resume){
   if(!resume||!job){
     var src=$("src").value.trim();
     if(!src){$("aiMsg").textContent="Pega primero el texto en inglés.";return}
-    job={parts:splitChunks(src),all:[],nw:[],i:0};
+    job={parts:splitChunks(preTag(src,$("aiWho").value)),all:[],nw:[],i:0};
   }
   if(!pw){$("aiMsg").textContent="Escribe tu contraseña (solo la primera vez).";return}
   setBusy(true);$("aiCont").hidden=true;
@@ -412,13 +444,13 @@ async function runAI(resume){
       try{localStorage.setItem(PWKEY,pw)}catch(e){}
     }
     job.all=fixLines(job.all,job.nw);
-    var add=addNewRules(job.nw);
+    var add=addNewRules(allNew());
     loadText(job.all);
     $("aiMsg").textContent="Listo: el texto ya está cargado en el lector."+(add.length?" Personajes nuevos agregados a «Personajes» con la voz del Narrador: "+add.join(", ")+". Elige su voz cuando quieras.":"");
     job=null;
   }catch(e){
     if(job.all.length){
-      job.all=fixLines(job.all,job.nw);addNewRules(job.nw);
+      job.all=fixLines(job.all,job.nw);addNewRules(allNew());
       loadText(job.all);
       $("aiMsg").textContent="Se cargaron las partes 1 a "+job.i+" de "+job.parts.length+". Falló la parte "+(job.i+1)+": "+e.message+" Pulsa «Continuar» para seguir desde ahí, sin repetir lo ya traducido.";
       $("aiCont").textContent="Continuar desde la parte "+(job.i+1);
@@ -430,6 +462,8 @@ async function runAI(resume){
   }
   setBusy(false);
 }
+try{var sw=localStorage.getItem("lector-voz-who");if(sw)$("aiWho").value=sw}catch(e){}
+$("aiWho").onchange=function(){try{localStorage.setItem("lector-voz-who",$("aiWho").value)}catch(e){}};
 $("aiGo").onclick=function(){runAI(false)};
 $("aiCont").onclick=function(){runAI(true)};
 
