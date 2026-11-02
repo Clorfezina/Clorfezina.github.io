@@ -83,10 +83,10 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div style="display:grid;gap:16px">
 <section>
 <h2>Traducir con IA</h2>
-<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. Las líneas sin nombre las dice quien elijas abajo; para cambiar de narrador a mitad del texto, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje).</p>
+<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. En «Automático» la página decide quién dice las líneas sin nombre: los pensamientos entre comillas simples son de WildGrills; una línea con «I», «my» o «me» lo pone a él como narrador; después de ***** narra el Narrador; y las dudosas siguen con la voz de la línea anterior. Si se equivoca, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje) para forzar el cambio desde ahí, y #Auto para volver al modo automático.</p>
 <div class="tw"><textarea id="src" placeholder="Pega aquí el texto en inglés"></textarea><button class="trash" id="trashSrc" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
 <label for="aiWho">Líneas sin nombre las dice</label>
-<select id="aiWho"><option value="WildGrills:">WildGrills</option><option value="Narrador:">Narrador</option><option value="Anónimo:">Anónimo</option></select>
+<select id="aiWho"><option value="auto">Automático (por contexto)</option><option value="WildGrills:">Siempre WildGrills</option><option value="Narrador:">Siempre Narrador</option><option value="Anónimo:">Siempre Anónimo</option></select>
 <label for="pw">Contraseña (solo la primera vez)</label>
 <input type="password" id="pw" autocomplete="off" placeholder="Tu contraseña">
 <div class="bar"><button class="main" id="aiGo">Traducir y cargar</button><button id="aiCont" type="button" hidden>Continuar</button></div>
@@ -374,21 +374,36 @@ function detectMarks(lines,nw){
   return found;
 }
 function allNew(){return job.nw.concat(detectMarks(job.all,job.nw).filter(function(n){return !hasName(job.nw,n)}))}
+var FP1=/\bI\b/,FP2=/\b(me|my|mine|myself)\b/i,QUOTED=/(^|\s)['‘“"][^'’“”"]+['’”"](?=[\s.,!?;:]|$)/g;
+var SOUND=/^["“]?\s*(?:ky\w*|kre\w*|gwek|chap|slurp|chomp|gororong|\.{2,})\W*["”]?\s*$/i;
+var THOUGHT=/^['‘].*['’]\s*[.!?…]*$/;
 function preTag(src,def){
   var names={};
   rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)names[p.toLowerCase()]=p});
   names["anonimo"]="Anónimo";
-  var cur=def.replace(/:$/,""),out=[];
+  var forced=(def==="auto")?null:def.replace(/:$/,"");
+  var cur="Narrador",saved="Narrador",scene3=false,inPost=false,out=[];
   src.split("\n").forEach(function(raw){
     var l=raw.trim().replace(/\\([~_])/g,"$1"),m;
-    if(!l||/^[\s*_=~#-]{3,}$/.test(l))return;
-    if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){cur=names[m[1].toLowerCase()]||m[1];return}
-    if((m=l.match(/^ㄴ\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u))){out.push((names[m[1].toLowerCase()]||m[1])+": "+m[2]);return}
-    if((m=l.match(/^ㄴ\s*(.*)$/u))){out.push("Anónimo: "+m[1]);return}
+    if(!l)return;
+    if(/^\*{3,}$/.test(l)){if(!forced){cur="Narrador";scene3=true;inPost=false}return}
+    if(/^[\s*_=~#-]{3,}$/.test(l))return;
+    if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){var k=m[1].toLowerCase();forced=(k==="auto"||k==="ia"||k==="automatico"||k==="automático")?null:(names[k]||m[1]);return}
+    if((m=l.match(/^ㄴ\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u))){if(inPost){cur=saved;inPost=false}out.push((names[m[1].toLowerCase()]||m[1])+": "+m[2]);return}
+    if((m=l.match(/^ㄴ\s*(.*)$/u))){if(inPost){cur=saved;inPost=false}out.push("Anónimo: "+m[1]);return}
     if((m=l.match(/^\[([\p{L}\p{N}_-]{2,40}):\s*(.*?)\]?$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
     if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
-    if(/^(título|titulo|autor|title|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
-    out.push(cur+": "+l.replace(/^[—–-]\s*/,""));
+    if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))){
+      if(!forced){saved=cur;cur=names[m[1].trim().toLowerCase()]||"Anónimo";inPost=true;scene3=false}
+      out.push("Narrador: "+l);return}
+    if(/^(título|titulo|title)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
+    var body=l.replace(/^[—–-]\s*/,""),who;
+    if(forced)who=forced;
+    else if(SOUND.test(body))who="Narrador";
+    else if(THOUGHT.test(body))who=scene3?cur:"WildGrills";
+    else if(FP1.test(body.replace(QUOTED," "))||FP2.test(body.replace(QUOTED," "))){cur="WildGrills";scene3=false;inPost=false;who="WildGrills"}
+    else who=cur;
+    out.push(who+": "+body);
   });
   return out.join("\n");
 }
@@ -462,8 +477,8 @@ async function runAI(resume){
   }
   setBusy(false);
 }
-try{var sw=localStorage.getItem("lector-voz-who");if(sw)$("aiWho").value=sw}catch(e){}
-$("aiWho").onchange=function(){try{localStorage.setItem("lector-voz-who",$("aiWho").value)}catch(e){}};
+try{var sw=localStorage.getItem("lector-voz-who3");if(sw)$("aiWho").value=sw}catch(e){}
+$("aiWho").onchange=function(){try{localStorage.setItem("lector-voz-who3",$("aiWho").value)}catch(e){}};
 $("aiGo").onclick=function(){runAI(false)};
 $("aiCont").onclick=function(){runAI(true)};
 
