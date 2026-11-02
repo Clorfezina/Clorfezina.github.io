@@ -83,10 +83,10 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div style="display:grid;gap:16px">
 <section>
 <h2>Traducir con IA</h2>
-<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. En «Automático» la página decide quién dice las líneas sin nombre: los pensamientos entre comillas simples son de WildGrills; una línea con «I», «my» o «me» lo pone a él como narrador; después de ***** narra el Narrador; y las dudosas siguen con la voz de la línea anterior. Si se equivoca, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje) para forzar el cambio desde ahí, y #Auto para volver al modo automático.</p>
+<p class="hint">PPega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lectorega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector.</p>
 <div class="tw"><textarea id="src" placeholder="Pega aquí el texto en inglés"></textarea><button class="trash" id="trashSrc" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
 <label for="aiWho">Líneas sin nombre las dice</label>
-<select id="aiWho"><option value="auto">Automático (por contexto)</option><option value="WildGrills:">Siempre WildGrills</option><option value="Narrador:">Siempre Narrador</option><option value="Anónimo:">Siempre Anónimo</option></select>
+<select id="aiWho"><option value="auto">Automático (detecta cada escena)</option><option value="first">Cuenta el protagonista (primera persona)</option><option value="third">Cuentan otros personajes (la IA decide quién habla)</option><option value="WildGrills:">Siempre WildGrills</option><option value="Narrador:">Siempre Narrador</option><option value="Anónimo:">Siempre Anónimo</option></select>
 <label for="pw">Contraseña (solo la primera vez)</label>
 <input type="password" id="pw" autocomplete="off" placeholder="Tu contraseña">
 <div class="bar"><button class="main" id="aiGo">Traducir y cargar</button><button id="aiCont" type="button" hidden>Continuar</button></div>
@@ -142,6 +142,7 @@ if(!rules.length)rules=[
 {p:"ChaengguPrincess:",vn:"Microsoft Laura",t:1.25,s:1.1},
 {p:"StarlightPrincess:",vn:"Microsoft Laura",t:1,s:1},
 {p:"SwordMaster:",vn:"Microsoft Laura",t:0.8,s:1},
+{p:"DemonicBrain:",vn:"Google español",t:1.1,s:1},
 {p:"Narrador:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
 {p:"DontAbandonTheHero:",vn:"Google español de Estados Unidos",t:0.8,s:0.9},
 {p:"Anónimo:",vn:"Google español de Estados Unidos",t:1.3,s:1.15}];
@@ -367,41 +368,85 @@ function detectMarks(lines,nw){
   var names=nameMap(nw),found=[];
   lines.forEach(function(l){
     var m=l.match(/^([\p{L}\p{N}_-]{2,40}):/u);
-    if(!m)return;var k=m[1].toLowerCase();
+    if(!m)return;var k=normKey(m[1]);
     if(names[k]||EXCL[k]||hasName(found,m[1]))return;
     found.push(m[1]);
   });
   return found;
 }
 function allNew(){return job.nw.concat(detectMarks(job.all,job.nw).filter(function(n){return !hasName(job.nw,n)}))}
-var FP1=/\bI\b/,FP2=/\b(me|my|mine|myself)\b/i,QUOTED=/(^|\s)['‘“"][^'’“”"]+['’”"](?=[\s.,!?;:]|$)/g;
+var FP1=/\bI\b/,FP2=/\b(me|my|mine|myself)\b/i;
+/* Comillas dobles (rectas o curvas, incluso mezcladas): pueden llevar apóstrofes dentro, como "It's". */
+var DQ=/["“”][^"“”]*["“”]/g;
+/* Frases cortas entre comillas simples, sin apóstrofes dentro: 'Reveal your nick'. */
+var SQ=/(^|\s)['‘][^'’]+['’](?=[\s.,!?;:]|$)/g;
+function noQuotes(s){return s.replace(DQ," ").replace(SQ," ")}
+function firstPerson(s){var b=noQuotes(s);return FP1.test(b)||FP2.test(b)}
 var SOUND=/^["“]?\s*(?:ky\w*|kre\w*|gwek|chap|slurp|chomp|gororong|\.{2,})\W*["”]?\s*$/i;
 var THOUGHT=/^['‘].*['’]\s*[.!?…]*$/;
+var STARTQ=/^["“”'‘]/;
+function normKey(s){return String(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu,"")}
+/* Variantes de nombres (sin espacios ni signos) -> nombre oficial. */
+var ALIAS={"princesschaenggu":"ChaengguPrincess","chaenggungprincess":"ChaengguPrincess","dontthrowawaythedragon":"DontAbandonTheHero","mod":"DontAbandonTheHero","wildgrylls":"WildGrills","demonicbrain":"DemonicBrain","wiseolak":"DemonicBrain"};
+function cleanLine(raw){return raw.trim().replace(/\\([~_*])/g,"$1")}
+function isMetaLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/^#/.test(l)||/^[\s*_=~#-]{3,}$/.test(l)||/^[\p{L}\p{N}_-]{2,40}:\s/u.test(l)}
+/* Decide, escena por escena (las escenas se separan con *****), si el texto lo cuenta el protagonista
+   (primera persona: muchas líneas de narración con "I", "my", "me") o si lo cuenta un narrador externo. */
+function sceneModes(rawLines){
+  var scenes=[[]];
+  rawLines.forEach(function(raw){var l=cleanLine(raw);if(/^\*{3,}$/.test(l)){scenes.push([]);return}scenes[scenes.length-1].push(l)});
+  return scenes.map(function(sc,idx){
+    var n=0,fp=0;
+    sc.forEach(function(l){
+      if(!l||isMetaLine(l)||STARTQ.test(l)||/^[—–-]/.test(l))return;
+      n++;if(firstPerson(l))fp++;
+    });
+    if(n<3)return idx===0?"first":"third";
+    return fp/n>=0.12?"first":"third";
+  });
+}
 function preTag(src,def){
-  var names={};
-  rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)names[p.toLowerCase()]=p});
+  var names=nameMap([]);
   names["anonimo"]="Anónimo";
-  var forced=(def==="auto")?null:def.replace(/:$/,"");
-  var cur="Narrador",saved="Narrador",scene3=false,inPost=false,out=[];
-  src.split("\n").forEach(function(raw){
-    var l=raw.trim().replace(/\\([~_])/g,"$1"),m;
+  var rawLines=src.split("\n");
+  var modes=sceneModes(rawLines),scene=0,mode=modes[0]||"first",modeOv=(def==="first"||def==="third")?def:null;
+  var forced=(def==="auto"||def==="first"||def==="third")?null:def.replace(/:$/,"");
+  var cur="Narrador",saved="Narrador",inPost=false,lastTitle=false,out=[];
+  rawLines.forEach(function(raw){
+    var l=cleanLine(raw),m;
     if(!l)return;
-    if(/^\*{3,}$/.test(l)){if(!forced){cur="Narrador";scene3=true;inPost=false}return}
+    if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur="Narrador";inPost=false}lastTitle=false;return}
+    if(/^_{5,}$/.test(l.replace(/\s/g,""))){if(inPost){cur=saved;inPost=false}lastTitle=false;return}
     if(/^[\s*_=~#-]{3,}$/.test(l))return;
-    if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){var k=m[1].toLowerCase();forced=(k==="auto"||k==="ia"||k==="automatico"||k==="automático")?null:(names[k]||m[1]);return}
-    if((m=l.match(/^ㄴ\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u))){if(inPost){cur=saved;inPost=false}out.push((names[m[1].toLowerCase()]||m[1])+": "+m[2]);return}
+    var wasTitle=lastTitle;lastTitle=false;
+    if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){
+      var k=normKey(m[1]);
+      if(k==="auto"||k==="ia"||k==="automatico"){forced=null;modeOv=null}
+      else if(k==="primera"||k==="first"){modeOv="first";forced=null}
+      else if(k==="tercera"||k==="third"){modeOv="third";forced=null}
+      else forced=names[k]||m[1];
+      return}
+    if((m=l.match(/^ㄴ\s*([^\s)][^)]{0,38})\)\s*(.*)$/u))){
+      var nm=m[1].trim(),nv=names[normKey(nm)]||(/^[\p{L}\p{N}_-]{2,40}$/u.test(nm)?nm:null);
+      if(nv){if(inPost){cur=saved;inPost=false}out.push(nv+": "+m[2]);return}
+    }
     if((m=l.match(/^ㄴ\s*(.*)$/u))){if(inPost){cur=saved;inPost=false}out.push("Anónimo: "+m[1]);return}
-    if((m=l.match(/^\[([\p{L}\p{N}_-]{2,40}):\s*(.*?)\]?$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
-    if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[m[1].toLowerCase()]){out.push(names[m[1].toLowerCase()]+": "+m[2]);return}
-    if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))){
-      if(!forced){saved=cur;cur=names[m[1].trim().toLowerCase()]||"Anónimo";inPost=true;scene3=false}
+    if((m=l.match(/^\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
+    if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
+    if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))||(wasTitle&&(m=l.match(/^au[a-z]{3,5}\s*:\s*(.+)$/i)))){
+      if(!forced){if(!inPost){saved=cur;inPost=true}cur=names[normKey(m[1])]||"Anónimo"}
       out.push("Narrador: "+l);return}
-    if(/^(título|titulo|title)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
+    if(/^(título|titulo|title)\s*:/i.test(l)){
+      if(!forced){if(!inPost){saved=cur;inPost=true}cur="Anónimo"}
+      lastTitle=true;out.push("Narrador: "+l);return}
+    if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
     var body=l.replace(/^[—–-]\s*/,""),who;
     if(forced)who=forced;
     else if(SOUND.test(body))who="Narrador";
-    else if(THOUGHT.test(body))who=scene3?cur:"WildGrills";
-    else if(FP1.test(body.replace(QUOTED," "))||FP2.test(body.replace(QUOTED," "))){cur="WildGrills";scene3=false;inPost=false;who="WildGrills"}
+    else if(inPost)who=cur;
+    else if((modeOv||mode)==="third")who=STARTQ.test(body)?"?":"Narrador";
+    else if(THOUGHT.test(body))who="WildGrills";
+    else if(firstPerson(body)){cur="WildGrills";who="WildGrills"}
     else who=cur;
     out.push(who+": "+body);
   });
@@ -410,19 +455,29 @@ function preTag(src,def){
 function hasName(arr,n){return arr.some(function(x){return x.toLowerCase()===n.toLowerCase()})}
 function nameMap(nw){
   var m={};
-  rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)m[p.toLowerCase()]=p});
-  nw.forEach(function(n){if(!m[n.toLowerCase()])m[n.toLowerCase()]=n});
+  rules.forEach(function(r){var p=(r.p||"").trim().replace(/:$/,"");if(p)m[normKey(p)]=p});
+  nw.forEach(function(n){var k=normKey(n);if(k&&!m[k])m[k]=n});
+  Object.keys(ALIAS).forEach(function(a){if(!m[a])m[a]=ALIAS[a]});
   return m;
 }
+/* Limpia lo que devuelve la IA: arregla marcas pegadas al nombre, líneas "?:" que no resolvió,
+   nombres filtrados dentro de Narrador/Anónimo y líneas a las que se les cayó la marca. */
 function fixLines(arr,nw){
-  var names=nameMap(nw);
+  var names=nameMap(nw),prev="Narrador";
+  var MARK=/^([\p{L}\p{N}_-]{2,40}):\s/u;
   return arr.map(function(l){
     var m;
-    if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*([\p{L}\p{N}_-]{2,40})\)\s*(.*)$/u)))return (names[m[1].toLowerCase()]||m[1])+": "+m[2];
-    if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*(.+?):\s+(.*)$/u))){
-      var k=m[1].toLowerCase();
-      if(names[k]&&k!=="narrador"&&k!=="anónimo"&&k!=="anonimo")return names[k]+": "+m[2];
+    l=l.replace(/^(\?|[\p{L}\p{N}_-]{2,40}):(?=\S)/u,"$1: ");
+    if(/^\?:/.test(l))l="Narrador: "+l.replace(/^\?:\s*/,"");
+    if((m=l.match(/^[^:]{2,40}:\s*((?:título|titulo|autor|author|title)\s*:.*|\(.*\))$/i)))l="Narrador: "+m[1];
+    if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])])l=names[normKey(m[1])]+": "+m[2];
+    else if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*([^)]{2,40})\)\s*(.*)$/u))&&names[normKey(m[1])])l=names[normKey(m[1])]+": "+m[2];
+    else if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*([^:]{2,40}):\s+(.*)$/u))){
+      var k=normKey(m[1]);
+      if(names[k]&&k!=="narrador"&&k!=="anónimo"&&k!=="anonimo")l=names[k]+": "+m[2];
     }
+    if(!MARK.test(l))l=prev+": "+l;
+    var mk=l.match(MARK);if(mk)prev=mk[1];
     return l;
   });
 }
