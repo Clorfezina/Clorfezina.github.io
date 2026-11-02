@@ -83,7 +83,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div style="display:grid;gap:16px">
 <section>
 <h2>Traducir con IA</h2>
-<p class="hint">PPega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lectorega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector.</p>
+<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. En «Automático» la página mira cada escena (las escenas se separan con *****): si la cuenta el protagonista («I», «my», «me»), las líneas sin nombre son de WildGrills; si la cuentan otros personajes (por ejemplo Wi Seol-ak y Yoo Sowol), la narración va con el Narrador y los diálogos y pensamientos los reparte la IA según el contexto. Si se equivoca, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje) para forzar una voz desde ahí, #Primera o #Tercera para forzar el tipo de escena, y #Auto para volver al modo automático.</p>
 <div class="tw"><textarea id="src" placeholder="Pega aquí el texto en inglés"></textarea><button class="trash" id="trashSrc" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
 <label for="aiWho">Líneas sin nombre las dice</label>
 <select id="aiWho"><option value="auto">Automático (detecta cada escena)</option><option value="first">Cuenta el protagonista (primera persona)</option><option value="third">Cuentan otros personajes (la IA decide quién habla)</option><option value="WildGrills:">Siempre WildGrills</option><option value="Narrador:">Siempre Narrador</option><option value="Anónimo:">Siempre Anónimo</option></select>
@@ -396,11 +396,18 @@ function sceneModes(rawLines){
   var scenes=[[]];
   rawLines.forEach(function(raw){var l=cleanLine(raw);if(/^\*{3,}$/.test(l)){scenes.push([]);return}scenes[scenes.length-1].push(l)});
   return scenes.map(function(sc,idx){
-    var n=0,fp=0;
+    var n=0,fp=0,postLeft=0,noteOn=false,n2=0,fp2=0;
     sc.forEach(function(l){
+      if(/^\|\s*(?:note|nota)\b/i.test(l))noteOn=true;
+      if(noteOn)return;
+      if(/^(título|titulo|title)\s*:/i.test(l)){postLeft=4;return}
+      if(/^ㄴ/.test(l)||/^_{5,}$/.test(l.replace(/\s/g,""))){postLeft=0}
       if(!l||isMetaLine(l)||STARTQ.test(l)||/^[—–-]/.test(l))return;
+      n2++;if(firstPerson(l))fp2++;
+      if(postLeft>0){postLeft--;return}
       n++;if(firstPerson(l))fp++;
     });
+    if(n<3&&n2>=3){n=n2;fp=fp2}
     if(n<3)return idx===0?"first":"third";
     return fp/n>=0.12?"first":"third";
   });
@@ -411,14 +418,16 @@ function preTag(src,def){
   var rawLines=src.split("\n");
   var modes=sceneModes(rawLines),scene=0,mode=modes[0]||"first",modeOv=(def==="first"||def==="third")?def:null;
   var forced=(def==="auto"||def==="first"||def==="third")?null:def.replace(/:$/,"");
-  var cur="Narrador",saved="Narrador",inPost=false,lastTitle=false,out=[];
+  var cur=((modeOv||mode)==="first")?"WildGrills":"Narrador",saved=cur,inPost=false,lastTitle=false,inNote=false,postN=0,out=[];
   rawLines.forEach(function(raw){
     var l=cleanLine(raw),m;
     if(!l)return;
-    if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur="Narrador";inPost=false}lastTitle=false;return}
+    if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur=((modeOv||mode)==="first")?"WildGrills":"Narrador";inPost=false}lastTitle=false;inNote=false;return}
     if(/^_{5,}$/.test(l.replace(/\s/g,""))){if(inPost){cur=saved;inPost=false}lastTitle=false;return}
     if(/^[\s*_=~#-]{3,}$/.test(l))return;
     var wasTitle=lastTitle;lastTitle=false;
+    if(/^\|\s*(?:note|nota)\b/i.test(l))inNote=true;
+    if(inNote&&!forced){out.push("Narrador: "+l.replace(/^\|\s*/,""));return}
     if((m=l.match(/^#\s*([\p{L}\p{N}_-]{2,40})\s*:?\s*$/u))){
       var k=normKey(m[1]);
       if(k==="auto"||k==="ia"||k==="automatico"){forced=null;modeOv=null}
@@ -434,20 +443,30 @@ function preTag(src,def){
     if((m=l.match(/^\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
     if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
     if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))||(wasTitle&&(m=l.match(/^au[a-z]{3,5}\s*:\s*(.+)$/i)))){
-      if(!forced){if(!inPost){saved=cur;inPost=true}cur=names[normKey(m[1])]||"Anónimo"}
+      if(!forced){if(!inPost){saved=cur;inPost=true;postN=0}cur=names[normKey(m[1])]||"Anónimo"}
       out.push("Narrador: "+l);return}
     if(/^(título|titulo|title)\s*:/i.test(l)){
-      if(!forced){if(!inPost){saved=cur;inPost=true}cur="Anónimo"}
+      inNote=false;
+      if(!forced){if(!inPost){saved=cur;inPost=true}cur="Anónimo";postN=0}
       lastTitle=true;out.push("Narrador: "+l);return}
     if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
-    var body=l.replace(/^[—–-]\s*/,""),who;
+    var body=l.replace(/^[—–-]\s*/,""),who,third=((modeOv||mode)==="third");
     if(forced)who=forced;
     else if(SOUND.test(body))who="Narrador";
-    else if(inPost)who=cur;
-    else if((modeOv||mode)==="third")who=STARTQ.test(body)?"?":"Narrador";
-    else if(THOUGHT.test(body))who="WildGrills";
-    else if(firstPerson(body)){cur="WildGrills";who="WildGrills"}
-    else who=cur;
+    else{
+      /* Una publicación de WildGrills o de un anónimo no puede durar más de 8 líneas sin respuestas. */
+      if(inPost&&!third&&(cur==="Anónimo"||cur==="WildGrills")&&postN>=8){cur=saved;inPost=false}
+      if(inPost){
+        postN++;
+        /* Si no se sabe dónde termina la publicación, la IA lo decide: "?[autor/quien narra]: texto". */
+        if(third||(cur!=="Anónimo"&&cur!=="WildGrills")){out.push("?["+cur+"/"+(third?"Narrador":"WildGrills")+"]: "+body);return}
+        who=cur;
+      }
+      else if(third)who=STARTQ.test(body)?"?":"Narrador";
+      else if(THOUGHT.test(body))who="WildGrills";
+      else if(firstPerson(body)){cur="WildGrills";who="WildGrills"}
+      else who=cur;
+    }
     out.push(who+": "+body);
   });
   return out.join("\n");
@@ -468,7 +487,8 @@ function fixLines(arr,nw){
   return arr.map(function(l){
     var m;
     l=l.replace(/^(\?|[\p{L}\p{N}_-]{2,40}):(?=\S)/u,"$1: ");
-    if(/^\?:/.test(l))l="Narrador: "+l.replace(/^\?:\s*/,"");
+    if(/^\?(?:\[[^\]]*\])?:/.test(l))l="Narrador: "+l.replace(/^\?(?:\[[^\]]*\])?:\s*/,"");
+    if(/^(?:Narrador|Anónimo|Anonimo)\s+[^:\s]/.test(l)&&!/^(?:Narrador|Anónimo|Anonimo):/.test(l))l=l.replace(/^(Narrador|Anónimo|Anonimo)\s+/,"$1: ");
     if((m=l.match(/^[^:]{2,40}:\s*((?:título|titulo|autor|author|title)\s*:.*|\(.*\))$/i)))l="Narrador: "+m[1];
     if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])])l=names[normKey(m[1])]+": "+m[2];
     else if((m=l.match(/^(?:Anónimo|Anonimo|Narrador):\s*([^)]{2,40})\)\s*(.*)$/u))&&names[normKey(m[1])])l=names[normKey(m[1])]+": "+m[2];
@@ -506,7 +526,7 @@ async function runAI(resume){
   try{
     for(;job.i<job.parts.length;job.i++){
       $("aiMsg").textContent="Traduciendo parte "+(job.i+1)+" de "+job.parts.length+"…";
-      var d=await callWorker({text:job.parts[job.i],part:job.i+1,total:job.parts.length,previous:job.all.slice(-6).join("\n")},pw);
+      var d=await callWorker({text:job.parts[job.i],part:job.i+1,total:job.parts.length,previous:job.all.slice(-6).join("\n"),known:allNew()},pw);
       var r=splitNew(d.text);
       if(!r.lines.length)throw new Error("La IA devolvió la parte "+(job.i+1)+" vacía.");
       r.nw.forEach(function(n){if(!hasName(job.nw,n))job.nw.push(n)});
