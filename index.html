@@ -83,7 +83,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div style="display:grid;gap:16px">
 <section>
 <h2>Traducir con IA</h2>
-<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector. En «Automático» la página mira cada escena (las escenas se separan con *****): si la cuenta el protagonista («I», «my», «me»), las líneas sin nombre son de WildGrills; si la cuentan otros personajes (por ejemplo Wi Seol-ak y Yoo Sowol), la narración va con el Narrador y los diálogos y pensamientos los reparte la IA según el contexto. Si se equivoca, escribe en una línea sola #Narrador, #Anónimo o #WildGrills (o el nombre de otro personaje) para forzar una voz desde ahí, #Primera o #Tercera para forzar el tipo de escena, y #Auto para volver al modo automático.</p>
+<p class="hint">Pega aquí el capítulo en inglés. La IA lo traduce y lo deja cargado en el lector.</p>
 <div class="tw"><textarea id="src" placeholder="Pega aquí el texto en inglés"></textarea><button class="trash" id="trashSrc" type="button" hidden aria-label="Borrar todo el texto" title="Borrar todo el texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
 <label for="aiWho">Líneas sin nombre las dice</label>
 <select id="aiWho"><option value="auto">Automático (detecta cada escena)</option><option value="first">Cuenta el protagonista (primera persona)</option><option value="third">Cuentan otros personajes (la IA decide quién habla)</option><option value="WildGrills:">Siempre WildGrills</option><option value="Narrador:">Siempre Narrador</option><option value="Anónimo:">Siempre Anónimo</option></select>
