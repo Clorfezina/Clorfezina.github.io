@@ -388,11 +388,19 @@ var STARTQ=/^["“”'‘]/;
 function normKey(s){return String(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu,"")}
 /* Variantes de nombres (sin espacios ni signos) -> nombre oficial. */
 var ALIAS={"princesschaenggu":"ChaengguPrincess","chaenggungprincess":"ChaengguPrincess","dontthrowawaythedragon":"DontAbandonTheHero","mod":"DontAbandonTheHero","wildgrylls":"WildGrills","demonicbrain":"DemonicBrain","wiseolak":"DemonicBrain"};
-function cleanLine(raw){return raw.trim().replace(/\\([~_*])/g,"$1")}
-function isMetaLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/^#/.test(l)||/^[\s*_=~#-]{3,}$/.test(l)||/^[\p{L}\p{N}_-]{2,40}:\s/u.test(l)}
+function cleanLine(raw){return raw.trim().replace(/\\([~_*])/g,"$1").replace(/^[└├⎿]\s*/,"ㄴ ")}
+function isMetaLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/^#/.test(l)||/^[\s*_=~#-]{3,}$/.test(l)||/^[\p{L}\p{N}_-]{2,40}:\s/u.test(l)||/^\?{2,}\s*:/.test(l)}
+/* ¿La línea es solo el nombre de un personaje conocido? (así se indica quién habla en los chats: el nombre solo, y debajo su mensaje) */
+function nameOnly(l,names){
+  if(!/^[\p{L}\p{N}_'’ .-]{2,40}$/u.test(l))return null;
+  var k=normKey(l);
+  if(!names[k]||k==="narrador"||k==="anonimo"||k==="anónimo")return null;
+  return names[k];
+}
 /* Decide, escena por escena (las escenas se separan con *****), si el texto lo cuenta el protagonista
    (primera persona: muchas líneas de narración con "I", "my", "me") o si lo cuenta un narrador externo. */
-function sceneModes(rawLines){
+function sceneModes(rawLines,names){
+  names=names||{};
   var scenes=[[]];
   rawLines.forEach(function(raw){var l=cleanLine(raw);if(/^\*{3,}$/.test(l)){scenes.push([]);return}scenes[scenes.length-1].push(l)});
   return scenes.map(function(sc,idx){
@@ -402,7 +410,7 @@ function sceneModes(rawLines){
       if(noteOn)return;
       if(/^(título|titulo|title)\s*:/i.test(l)){postLeft=4;return}
       if(/^ㄴ/.test(l)||/^_{5,}$/.test(l.replace(/\s/g,""))){postLeft=0}
-      if(!l||isMetaLine(l)||STARTQ.test(l)||/^[—–-]/.test(l))return;
+      if(!l||isMetaLine(l)||STARTQ.test(l)||/^[—–-]/.test(l)||nameOnly(l,names))return;
       n2++;if(firstPerson(l))fp2++;
       if(postLeft>0){postLeft--;return}
       n++;if(firstPerson(l))fp++;
@@ -412,18 +420,47 @@ function sceneModes(rawLines){
     return fp/n>=0.12?"first":"third";
   });
 }
+/* Líneas que probablemente son publicaciones o comentarios sueltos de usuarios anónimos de la galería
+   (sin Título ni Autor): las que están justo antes de un grupo de respuestas (ㄴ / └) y las listas de títulos cortos. */
+function findLoose(L,names){
+  var h=[],i,j,c;
+  for(i=0;i<L.length;i++)h.push(false);
+  function stopLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\*{3,}$/.test(l)||/^_{5,}$/.test(l.replace(/\s/g,""))||!!nameOnly(l,names)}
+  function narr(l){return l.split(/\s+/).length>=6&&firstPerson(l)&&!STARTQ.test(l)}
+  for(i=0;i<L.length;i++){
+    if(/^ㄴ/.test(L[i])&&(i===0||!/^ㄴ/.test(L[i-1]))){
+      for(j=i-1,c=0;j>=0&&c<6;j--,c++){
+        if(stopLine(L[j]))break;
+        if(c>0&&narr(L[j]))break;
+        h[j]=true;
+      }
+    }
+  }
+  var run=[],after=0;
+  function flush(){if(run.length>=3)run.forEach(function(k){h[k]=true});run=[]}
+  for(i=0;i<L.length;i++){
+    var l=L[i];
+    if(nameOnly(l,names)){after=3;flush();continue}
+    if(after>0){after--;flush();continue}
+    var short=l.split(/\s+/).length<=8&&!STARTQ.test(l)&&!firstPerson(l)&&!isMetaLine(l)&&!/^\|/.test(l);
+    if(short)run.push(i);else flush();
+  }
+  flush();
+  return h;
+}
 function preTag(src,def){
   var names=nameMap([]);
   names["anonimo"]="Anónimo";
   var rawLines=src.split("\n");
-  var modes=sceneModes(rawLines),scene=0,mode=modes[0]||"first",modeOv=(def==="first"||def==="third")?def:null;
+  var L=rawLines.map(cleanLine).filter(function(x){return x});
+  var loose=findLoose(L,names);
+  var modes=sceneModes(rawLines,names),scene=0,mode=modes[0]||"first",modeOv=(def==="first"||def==="third")?def:null;
   var forced=(def==="auto"||def==="first"||def==="third")?null:def.replace(/:$/,"");
-  var cur=((modeOv||mode)==="first")?"WildGrills":"Narrador",saved=cur,inPost=false,lastTitle=false,inNote=false,postN=0,out=[];
-  rawLines.forEach(function(raw){
-    var l=cleanLine(raw),m;
-    if(!l)return;
-    if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur=((modeOv||mode)==="first")?"WildGrills":"Narrador";inPost=false}lastTitle=false;inNote=false;return}
-    if(/^_{5,}$/.test(l.replace(/\s/g,""))){if(inPost){cur=saved;inPost=false}lastTitle=false;return}
+  var cur=((modeOv||mode)==="first")?"WildGrills":"Narrador",saved=cur,inPost=false,lastTitle=false,inNote=false,postN=0,chatWho=null,chatLeft=0,out=[];
+  L.forEach(function(l,idx){
+    var m;
+    if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur=((modeOv||mode)==="first")?"WildGrills":"Narrador";inPost=false}lastTitle=false;inNote=false;chatLeft=0;return}
+    if(/^_{5,}$/.test(l.replace(/\s/g,""))){if(inPost){cur=saved;inPost=false}lastTitle=false;chatLeft=0;return}
     if(/^[\s*_=~#-]{3,}$/.test(l))return;
     var wasTitle=lastTitle;lastTitle=false;
     if(/^\|\s*(?:note|nota)\b/i.test(l))inNote=true;
@@ -435,22 +472,34 @@ function preTag(src,def){
       else if(k==="tercera"||k==="third"){modeOv="third";forced=null}
       else forced=names[k]||m[1];
       return}
-    if((m=l.match(/^ㄴ\s*([^\s)][^)]{0,38})\)\s*(.*)$/u))){
-      var nm=m[1].trim(),nv=names[normKey(nm)]||(/^[\p{L}\p{N}_-]{2,40}$/u.test(nm)?nm:null);
-      if(nv){if(inPost){cur=saved;inPost=false}out.push(nv+": "+m[2]);return}
-    }
-    if((m=l.match(/^ㄴ\s*(.*)$/u))){if(inPost){cur=saved;inPost=false}out.push("Anónimo: "+m[1]);return}
+    if(/^ㄴ/.test(l)){
+      chatLeft=0;
+      if((m=l.match(/^ㄴ\s*([^\s)][^)]{0,38})\)\s*(.*)$/u))){
+        var nm=m[1].trim(),nv=names[normKey(nm)]||(/^[\p{L}\p{N}_-]{2,40}$/u.test(nm)?nm:null);
+        if(nv){if(inPost){cur=saved;inPost=false}out.push(nv+": "+m[2]);return}
+      }
+      if((m=l.match(/^ㄴ\s*([^:]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]&&normKey(m[1])!=="narrador"){if(inPost){cur=saved;inPost=false}out.push(names[normKey(m[1])]+": "+m[2]);return}
+      m=l.match(/^ㄴ\s*(.*)$/u);if(inPost){cur=saved;inPost=false}
+      out.push("Anónimo: "+m[1].replace(/^\?{2,}\s*:\s*/,""));return}
+    if((m=l.match(/^\?{2,}\s*:\s*(.*)$/))){out.push("Anónimo: "+m[1]);return}
     if((m=l.match(/^\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
     if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
     if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))||(wasTitle&&(m=l.match(/^au[a-z]{3,5}\s*:\s*(.+)$/i)))){
       if(!forced){if(!inPost){saved=cur;inPost=true;postN=0}cur=names[normKey(m[1])]||"Anónimo"}
       out.push("Narrador: "+l);return}
     if(/^(título|titulo|title)\s*:/i.test(l)){
-      inNote=false;
+      inNote=false;chatLeft=0;
       if(!forced){if(!inPost){saved=cur;inPost=true}cur="Anónimo";postN=0}
       lastTitle=true;out.push("Narrador: "+l);return}
-    if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)){out.push("Narrador: "+l);return}
-    var body=l.replace(/^[—–-]\s*/,""),who,third=((modeOv||mode)==="third");
+    if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/\b(?:has sent you|sent you) an? (?:trade|exchange) request\b/i.test(l)){out.push("Narrador: "+l);return}
+    /* Línea con solo un nombre: es la etiqueta de quién habla (no se lee). Si es el autor de una publicación, pasa a ser el autor;
+       si es un chat, sus mensajes están en las líneas siguientes. */
+    var who2=nameOnly(l,names);
+    if(who2&&!forced){
+      if(inPost){cur=who2}
+      else{chatWho=who2;chatLeft=3}
+      return}
+    var body=l.replace(/^[—–-]\s*/,""),who,third=((modeOv||mode)==="third"),fb=third?"Narrador":"WildGrills";
     if(forced)who=forced;
     else if(SOUND.test(body))who="Narrador";
     else{
@@ -459,9 +508,15 @@ function preTag(src,def){
       if(inPost){
         postN++;
         /* Si no se sabe dónde termina la publicación, la IA lo decide: "?[autor/quien narra]: texto". */
-        if(third||(cur!=="Anónimo"&&cur!=="WildGrills")){out.push("?["+cur+"/"+(third?"Narrador":"WildGrills")+"]: "+body);return}
+        if(third||(cur!=="Anónimo"&&cur!=="WildGrills")){out.push("?["+cur+"/"+fb+"]: "+body);return}
         who=cur;
       }
+      else if(chatLeft>0&&chatWho&&!(chatWho===fb)){
+        /* Mensaje de un chat: puede ser de esa persona o respuesta de quien cuenta; la IA lo decide. */
+        chatLeft--;
+        out.push("?["+chatWho+"/"+fb+"]: "+body);return}
+      else if(chatLeft>0&&chatWho){chatLeft--;who=fb}
+      else if(loose[idx]){out.push("?[Anónimo/"+fb+"]: "+body);return}
       else if(third)who=STARTQ.test(body)?"?":"Narrador";
       else if(THOUGHT.test(body))who="WildGrills";
       else if(firstPerson(body)){cur="WildGrills";who="WildGrills"}
@@ -487,6 +542,7 @@ function fixLines(arr,nw){
   return arr.map(function(l){
     var m;
     l=l.replace(/^(\?|[\p{L}\p{N}_-]{2,40}):(?=\S)/u,"$1: ");
+    if((m=l.match(/^\?\[[^\/\]]*\/([^\]]*)\]:\s*(.*)$/))){var fbk=names[normKey(m[1])];l=(fbk&&normKey(m[1])!=="anonimo"?fbk:"Narrador")+": "+m[2]}
     if(/^\?(?:\[[^\]]*\])?:/.test(l))l="Narrador: "+l.replace(/^\?(?:\[[^\]]*\])?:\s*/,"");
     if(/^(?:Narrador|Anónimo|Anonimo)\s+[^:\s]/.test(l)&&!/^(?:Narrador|Anónimo|Anonimo):/.test(l))l=l.replace(/^(Narrador|Anónimo|Anonimo)\s+/,"$1: ");
     if((m=l.match(/^[^:]{2,40}:\s*((?:título|titulo|autor|author|title)\s*:.*|\(.*\))$/i)))l="Narrador: "+m[1];
