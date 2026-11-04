@@ -387,9 +387,28 @@ var THOUGHT=/^['‘].*['’]\s*[.!?…]*$/;
 var STARTQ=/^["“”'‘]/;
 function normKey(s){return String(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu,"")}
 /* Variantes de nombres (sin espacios ni signos) -> nombre oficial. */
-var ALIAS={"princesschaenggu":"ChaengguPrincess","chaenggungprincess":"ChaengguPrincess","dontthrowawaythedragon":"DontAbandonTheHero","mod":"DontAbandonTheHero","wildgrylls":"WildGrills","demonicbrain":"DemonicBrain","wiseolak":"DemonicBrain"};
+var ALIAS={"princesschaenggu":"ChaengguPrincess","chaenggungprincess":"ChaengguPrincess","dontthrowawaythedragon":"DontAbandonTheHero","mod":"DontAbandonTheHero","wildgrylls":"WildGrills","demonicbrain":"DemonicBrain","wiseolak":"DemonicBrain","registereduser":"Anónimo","unregistereduser":"Anónimo","anonymous":"Anónimo","anon":"Anónimo"};
 function cleanLine(raw){return raw.trim().replace(/\\([~_*])/g,"$1").replace(/^[└├⎿]\s*/,"ㄴ ")}
-function isMetaLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/^#/.test(l)||/^[\s*_=~#-]{3,}$/.test(l)||/^[\p{L}\p{N}_-]{2,40}:\s/u.test(l)||/^\?{2,}\s*:/.test(l)}
+function isMetaLine(l){return /^ㄴ/.test(l)||/^(título|titulo|title|autor|author)\s*:/i.test(l)||/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/^#/.test(l)||/^[\s*_=~#-]{3,}$/.test(l)||/^[\p{Lu}][^:]{1,38}:\s/u.test(l)||/^[\p{L}\p{N}_-]{2,40}:\s/u.test(l)||/^\?{2,}\s*:/.test(l)}
+/* "Nombre: texto". Reconoce nombres conocidos (con espacios, apóstrofes, "registered user"...) y nombres nuevos escritos como nombre propio
+   ("King Leor", "WeShouldGrowTrees"). Los marcadores "HSU vs. Leor: ..." se tratan como Narrador. */
+var NOTSPK={note:1,nota:1,title:1,titulo:1,"título":1,author:1,autor:1,reminder:1,edit:1,warning:1,tn:1,ps:1,notice:1,update:1};
+function speakerLine(l,names){
+  var m=l.match(/^([^:]{2,40}):\s+(.+)$/u);
+  if(!m)return null;
+  var raw=m[1].trim(),k=normKey(raw);
+  if(!k)return null;
+  if(names[k])return {n:names[k],t:m[2]};
+  if(NOTSPK[k])return null;
+  if(/\bvs\.?\s/i.test(raw))return {n:"Narrador",t:l};
+  var words=raw.split(/\s+/);
+  if(words.length>4)return null;
+  if(!words.every(function(w){return /^[\p{Lu}][\p{L}\p{N}'’.-]*$/u.test(w)}))return null;
+  var tok=words.join("").replace(/[^\p{L}\p{N}_-]/gu,"");
+  if(tok.length<3)return null;
+  if(words.length===1&&!/[\p{Ll}][\p{Lu}]|[\p{N}_]/u.test(tok))return null;
+  return {n:tok,t:m[2]};
+}
 /* ¿La línea es solo el nombre de un personaje conocido? (así se indica quién habla en los chats: el nombre solo, y debajo su mensaje) */
 function nameOnly(l,names){
   if(!/^[\p{L}\p{N}_'’ .-]{2,40}$/u.test(l))return null;
@@ -456,7 +475,7 @@ function preTag(src,def){
   var loose=findLoose(L,names);
   var modes=sceneModes(rawLines,names),scene=0,mode=modes[0]||"first",modeOv=(def==="first"||def==="third")?def:null;
   var forced=(def==="auto"||def==="first"||def==="third")?null:def.replace(/:$/,"");
-  var cur=((modeOv||mode)==="first")?"WildGrills":"Narrador",saved=cur,inPost=false,lastTitle=false,inNote=false,postN=0,chatWho=null,chatLeft=0,out=[];
+  var cur=((modeOv||mode)==="first")?"WildGrills":"Narrador",saved=cur,inPost=false,lastTitle=false,inNote=false,postN=0,chatWho=null,chatLeft=0,photoAfterName=false,out=[];
   L.forEach(function(l,idx){
     var m;
     if(/^\*{3,}$/.test(l)){scene++;mode=modes[scene]||"third";if(!forced){cur=((modeOv||mode)==="first")?"WildGrills":"Narrador";inPost=false}lastTitle=false;inNote=false;chatLeft=0;return}
@@ -478,12 +497,14 @@ function preTag(src,def){
         var nm=m[1].trim(),nv=names[normKey(nm)]||(/^[\p{L}\p{N}_-]{2,40}$/u.test(nm)?nm:null);
         if(nv){if(inPost){cur=saved;inPost=false}out.push(nv+": "+m[2]);return}
       }
-      if((m=l.match(/^ㄴ\s*([^:]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]&&normKey(m[1])!=="narrador"){if(inPost){cur=saved;inPost=false}out.push(names[normKey(m[1])]+": "+m[2]);return}
+      var sp0=speakerLine(l.replace(/^ㄴ\s*/,""),names);
+      if(sp0&&sp0.n!=="Narrador"){if(inPost){cur=saved;inPost=false}out.push(sp0.n+": "+sp0.t);return}
       m=l.match(/^ㄴ\s*(.*)$/u);if(inPost){cur=saved;inPost=false}
       out.push("Anónimo: "+m[1].replace(/^\?{2,}\s*:\s*/,""));return}
-    if((m=l.match(/^\?{2,}\s*:\s*(.*)$/))){out.push("Anónimo: "+m[1]);return}
-    if((m=l.match(/^\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
-    if((m=l.match(/^([\p{L}\p{N}_-]{2,40}):\s*(.*)$/u))&&names[normKey(m[1])]){out.push(names[normKey(m[1])]+": "+m[2]);return}
+    if((m=l.match(/^\?{2,}\s*:\s*(.*)$/))){chatWho="Anónimo";chatLeft=1;photoAfterName=false;out.push("Anónimo: "+m[1]);return}
+    if((m=l.match(/^\[([^\]:]{2,40}):\s*(.*?)\]?$/u))&&names[normKey(m[1])]){chatLeft=0;out.push(names[normKey(m[1])]+": "+m[2]);return}
+    var sp=speakerLine(l,names);
+    if(sp&&!/^(?:título|titulo|title|autor|author)$/i.test(sp.n)){chatLeft=0;photoAfterName=false;out.push(sp.n+": "+sp.t);return}
     if((m=l.match(/^(?:autor|author)\s*:\s*(.+)$/i))||(wasTitle&&(m=l.match(/^au[a-z]{3,5}\s*:\s*(.+)$/i)))){
       if(!forced){if(!inPost){saved=cur;inPost=true;postN=0}cur=names[normKey(m[1])]||"Anónimo"}
       out.push("Narrador: "+l);return}
@@ -491,7 +512,9 @@ function preTag(src,def){
       inNote=false;chatLeft=0;
       if(!forced){if(!inPost){saved=cur;inPost=true}cur="Anónimo";postN=0}
       lastTitle=true;out.push("Narrador: "+l);return}
-    if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/\b(?:has sent you|sent you) an? (?:trade|exchange) request\b/i.test(l)){out.push("Narrador: "+l);return}
+    if(/^\(.*\)$/.test(l)||/^\[.*\]$/.test(l)||/\b(?:has sent you|sent you) an? (?:trade|exchange) request\b/i.test(l)||/\b(?:has requested|requested) a (?:trade|exchange)\b/i.test(l)){
+      if(/^\(/.test(l)&&chatLeft>0)photoAfterName=true;
+      out.push("Narrador: "+l);return}
     /* Línea con solo un nombre: es la etiqueta de quién habla (no se lee). Si es el autor de una publicación, pasa a ser el autor;
        si es un chat, sus mensajes están en las líneas siguientes. */
     var who2=nameOnly(l,names);
@@ -505,12 +528,14 @@ function preTag(src,def){
     else{
       /* Una publicación de WildGrills o de un anónimo no puede durar más de 8 líneas sin respuestas. */
       if(inPost&&!third&&(cur==="Anónimo"||cur==="WildGrills")&&postN>=8){cur=saved;inPost=false}
+      if(photoAfterName&&!STARTQ.test(body)){photoAfterName=false;chatLeft=0}
       if(inPost){
         postN++;
         /* Si no se sabe dónde termina la publicación, la IA lo decide: "?[autor/quien narra]: texto". */
         if(third||(cur!=="Anónimo"&&cur!=="WildGrills")){out.push("?["+cur+"/"+fb+"]: "+body);return}
         who=cur;
       }
+      else if(photoAfterName&&chatWho&&STARTQ.test(body)){who=chatWho}
       else if(chatLeft>0&&chatWho&&!(chatWho===fb)){
         /* Mensaje de un chat: puede ser de esa persona o respuesta de quien cuenta; la IA lo decide. */
         chatLeft--;
@@ -584,7 +609,11 @@ async function runAI(resume){
       $("aiMsg").textContent="Traduciendo parte "+(job.i+1)+" de "+job.parts.length+"…";
       var d=await callWorker({text:job.parts[job.i],part:job.i+1,total:job.parts.length,previous:job.all.slice(-6).join("\n"),known:allNew()},pw);
       var r=splitNew(d.text);
-      if(!r.lines.length)throw new Error("La IA devolvió la parte "+(job.i+1)+" vacía.");
+      if(!r.lines.length)throw new Error("La IA devolvió la parte "+(job.i+1)+" vacía (modelo: "+(d.model||"?")+").");
+      /* Si casi todas las líneas siguen en inglés, Gemini no tradujo: se avisa en vez de cargar el texto sin traducir. */
+      var eng=r.lines.filter(function(l){return /\b(the|and|was|were|his|her|you|that|with|this|they)\b/i.test(l.replace(/^[^:]{1,40}:\s*/,""))}).length;
+      if(r.lines.length>=5&&eng/r.lines.length>0.5)throw new Error("La IA devolvió la parte "+(job.i+1)+" casi sin traducir (modelo: "+(d.model||"?")+"). Suele pasar con el modelo de reserva cuando se acaba el cupo de los otros. Espera un rato y pulsa el botón de reintentar.");
+      job.model=d.model||job.model;
       r.nw.forEach(function(n){if(!hasName(job.nw,n))job.nw.push(n)});
       job.all=job.all.concat(fixLines(r.lines,job.nw));
       try{localStorage.setItem(PWKEY,pw)}catch(e){}
@@ -592,7 +621,7 @@ async function runAI(resume){
     job.all=fixLines(job.all,job.nw);
     var add=addNewRules(allNew());
     loadText(job.all);
-    $("aiMsg").textContent="Listo: el texto ya está cargado en el lector."+(add.length?" Personajes nuevos agregados a «Personajes» con la voz del Narrador: "+add.join(", ")+". Elige su voz cuando quieras.":"");
+    $("aiMsg").textContent="Listo (modelo: "+(job.model||"?")+"): el texto ya está cargado en el lector."+(add.length?" Personajes nuevos agregados a «Personajes» con la voz del Narrador: "+add.join(", ")+". Elige su voz cuando quieras.":"");
     job=null;
   }catch(e){
     if(job.all.length){
